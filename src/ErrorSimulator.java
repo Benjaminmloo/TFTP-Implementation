@@ -12,16 +12,14 @@ import java.util.Arrays;
  * @author BLoo
  *
  */
-public class Host {
-	private DatagramSocket clientReceiveSocket;
-	private DatagramSocket hostSocket;
+public class ErrorSimulator {
+	private DatagramSocket eSimSocket;
+	private DatagramSocket sendSocket;
 
 	private DatagramPacket sendPacket;
 	private DatagramPacket receivePacket;
 
-	private int clientPort, serverPort;
-
-	byte read[], write[];
+	private int eSimPort, serverPort;
 
 	/**
 	 * Base constructor for Host
@@ -29,15 +27,18 @@ public class Host {
 	 * @param clientPort
 	 * @param serverPort
 	 */
-	Host(int clientPort, int serverPort) {
-		this.clientPort = clientPort;
+	ErrorSimulator(int clientPort, int serverPort) {
+		this.eSimPort = clientPort;
 		this.serverPort = serverPort;
 
 		try {
-			clientReceiveSocket = new DatagramSocket(this.clientPort);
-			hostSocket = new DatagramSocket();
+			eSimSocket = new DatagramSocket(this.eSimPort);
+			sendSocket = new DatagramSocket();
 
 		} catch (SocketException e) {
+			eSimSocket.close();
+			sendSocket.close();
+			
 			e.printStackTrace();
 			System.exit(1);
 		}
@@ -46,7 +47,7 @@ public class Host {
 	/**
 	 * Default constructor setting the client and servers ports to their defaults
 	 */
-	Host() {
+	ErrorSimulator() {
 		this(23, 69);
 	}
 
@@ -54,14 +55,14 @@ public class Host {
 	 * @return clientReceiveSocket
 	 */
 	private DatagramSocket getClientReceiveSocket() {
-		return clientReceiveSocket;
+		return eSimSocket;
 	}
 
 	/**
 	 * @return hostSocket
 	 */
 	private DatagramSocket getHostSocket() {
-		return hostSocket;
+		return sendSocket;
 	}
 
 	/**
@@ -75,7 +76,7 @@ public class Host {
 	 * @return clientPort
 	 */
 	public int getClientPort() {
-		return clientPort;
+		return eSimPort;
 	}
 
 	/**
@@ -100,6 +101,8 @@ public class Host {
 
 			return receivePacket;
 		} catch (IOException e) {
+			eSimSocket.close();
+			sendSocket.close();
 			e.printStackTrace();
 			System.exit(1);
 		}
@@ -113,7 +116,7 @@ public class Host {
 	 * @param socket
 	 * @param returnAddress
 	 */
-	void send(byte[] msg, DatagramSocket socket, SocketAddress returnAddress) {
+	private void send(byte[] msg, DatagramSocket socket, SocketAddress returnAddress) {
 		sendPacket = new DatagramPacket(msg, msg.length, returnAddress);
 		send(socket, sendPacket);
 	}
@@ -126,7 +129,7 @@ public class Host {
 	 * @param address
 	 * @param port
 	 */
-	void send(byte[] msg, DatagramSocket socket, InetAddress address, int port) {
+	private void send(byte[] msg, DatagramSocket socket, InetAddress address, int port) {
 		sendPacket = new DatagramPacket(msg, msg.length, address, port);
 		send(socket, sendPacket);
 	}
@@ -137,7 +140,7 @@ public class Host {
 	 * @param socket
 	 * @param sendPacket
 	 */
-	void send(DatagramSocket socket, DatagramPacket sendPacket) {
+	private void send(DatagramSocket socket, DatagramPacket sendPacket) {
 		try {
 			System.out.println("Host Sending: " + sendPacket.getPort());
 			System.out.println(new String(sendPacket.getData()));
@@ -146,8 +149,45 @@ public class Host {
 			socket.send(sendPacket);
 
 		} catch (IOException e) {
+			eSimSocket.close();
+			sendSocket.close();
 			e.printStackTrace();
 			System.exit(1);
+		}
+	}
+	
+	
+	/**
+	 * Passes packet to server and handles the response
+	 * 
+	 * @param packet - to be sent to server
+	 * @return packet received from server  
+	 */
+	private DatagramPacket passOn(DatagramPacket packet)
+	{
+		try {
+			send(Arrays.copyOf(packet.getData(), packet.getLength()), getHostSocket(), InetAddress.getLocalHost(), getServerPort());
+		} catch (UnknownHostException e) {
+			eSimSocket.close();
+			sendSocket.close();
+			e.printStackTrace();
+			System.exit(1);
+		}
+		//send message, excluding the trailing zeroes
+		return receive(getHostSocket());
+	}
+	
+	/**
+	 * Waits for packets and passes them onto their recipient 
+	 * 
+	 */
+	void startPassthrough()
+	{
+		DatagramPacket initialPacket, responsePacket;
+		while (true) {
+			initialPacket = receive(getClientReceiveSocket()); //wait to receive packet from client
+			responsePacket = passOn(initialPacket);
+			send(Arrays.copyOf(responsePacket.getData(), responsePacket.getLength()), getHostSocket(), initialPacket.getSocketAddress()); //send reply from the server to the server to the client
 		}
 	}
 
@@ -157,24 +197,7 @@ public class Host {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Host h = new Host(23, 69);
-		DatagramPacket receivedPacket;
-		SocketAddress returnAddress;
-		while (true) {
-			try {
-				receivedPacket = h.receive(h.getClientReceiveSocket());
-				returnAddress = receivedPacket.getSocketAddress(); // save return address
-																	//the address the client just sent from
-
-				h.send(Arrays.copyOf(receivedPacket.getData(), receivedPacket.getLength()), h.getHostSocket(),  //send message, excluding the trailing zeroes
-						InetAddress.getLocalHost(), h.getServerPort());
-				receivedPacket = h.receive(h.getHostSocket());
-				h.send(Arrays.copyOf(receivedPacket.getData(), receivedPacket.getLength()), h.getHostSocket(), //send reply from the server to the server to the client
-						returnAddress);
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
-		}
+		ErrorSimulator h = new ErrorSimulator(23, 69);
+		h.startPassthrough();
 	}
 }
