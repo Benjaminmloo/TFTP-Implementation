@@ -3,8 +3,10 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -270,12 +272,12 @@ public class Server {
 				
 			/* Data */
 			case 3:
-				
+				System.out.println("Received out of time DATA packet");
 				break;
 				
 			/* Acknowledge */
 			case 4:
-				
+				System.out.println("Received out of time ACK packet");
 				break;
 				
 			/* Error */
@@ -285,28 +287,43 @@ public class Server {
 		}
 			
 	}
-
+	
 	/**
-	 * @author BenjaminP
-	 * Checks for last data block
 	 * 
-	 * @param packet	Packet containing data block
-	 * @return	Boolean, returns false when the last packet has been received ie. 0 <= data size < 512
+	 * @param packet
 	 */
-	private boolean blockReceive(DatagramPacket packet) throws IllegalArgumentException
+	private void readRequestHandler(DatagramPacket packet)
 	{
-		byte data[] = packet.getData();
-		/* This checks for a data block number */
-		byte blockNum = (byte) ((data[2] * 10) + data[3]); //Converts the two separate bytes into one byte
+		/* 
+		 * List of byte arrays of max size 512 = Call parser here
+		 * 
+		 *  */
 		
-		if( (data.length - 4) == 512)
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
+		/* 
+		 * LOOP
+		 * this.send( 1st array, packet.getSocketAddress);
+		 * Wait for ACK...
+		 * this.send( 2nd array, packet.getSocketAddress);
+		 * Wait for ACK etc...
+		 */
+	}
+	
+	/**
+	 * 
+	 * @param packet
+	 */
+	private void writeRequestHandler(DatagramPacket packet)
+	{
+		List<byte[]> file = new ArrayList<byte[]>(); //Byte stream might be better
+		/* 
+		 * LOOP
+		 * Send ACK block 0
+		 * Wait for next Data
+		 * file.add(receivedData);
+		 * Send ACK block 1
+		 * Wait for next Data 
+		 * etc...
+		 */
 	}
 
 	/**
