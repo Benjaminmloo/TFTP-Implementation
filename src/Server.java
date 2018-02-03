@@ -156,7 +156,7 @@ public class Server {
 			System.exit(1);
 		}
 	}
-
+	
 	/**
 	 * methods the manages packet being received
 	 * 
@@ -242,9 +242,52 @@ public class Server {
 		else
 			throw new IllegalArgumentException();
 	}
-
+	
 	/**
 	 * 
+	 * Handles packet requests
+	 * 
+	 * @param packet
+	 */
+	private void requestHandler(DatagramPacket packet)
+	{
+		byte request = this.getRequest(packet);
+		switch (request){
+			
+			/* Read Request */
+			case 1: 
+				// Respond with Data block 1 and 0 bytes of data
+				byte data[] = { 0, 3, 0, 1};
+				this.send(data, packet.getSocketAddress() );
+				break;
+				
+			/* Write Request */
+			case 2:
+				// Respond with ACK block 0
+				byte data1[] = { 0, 4, 0, 0};
+				this.send(data1, packet.getSocketAddress() );
+				break;
+				
+			/* Data */
+			case 3:
+				
+				break;
+				
+			/* Acknowledge */
+			case 4:
+				
+				break;
+				
+			/* Error */
+			case 5:
+				/* Currently does nothing */
+				break;
+		}
+			
+	}
+
+	/**
+	 * @author BenjaminP
 	 * Checks for last data block
 	 * 
 	 * @param packet	Packet containing data block
