@@ -1,4 +1,7 @@
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
@@ -312,9 +315,20 @@ public class Server {
 	 * 
 	 * @param packet
 	 */
-	private void writeRequestHandler(DatagramPacket packet)
+	private void writeRequestHandler(DatagramPacket packet) 
 	{
-		List<byte[]> file = new ArrayList<byte[]>(); //Byte stream might be better
+		int offset = 0;
+		int bytes = 0;
+		int blockNum = 0;
+		SocketAddress returnAddress = packet.getSocketAddress();
+		try {
+			OutputStream file = new FileOutputStream(getFileName(packet));
+			send()
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
 		/* 
 		 * LOOP
 		 * Send ACK block 0
@@ -324,6 +338,21 @@ public class Server {
 		 * Wait for next Data 
 		 * etc...
 		 */
+	}
+	private void createAck(int blockNum) {
+		
+	}
+	
+	private String readBytes(int index, byte[] packet, int dataLength) {
+		String data = "";
+		while (index < dataLength && packet[index] != 0) {
+			data += (char) packet[index++];
+		}
+		return data;
+	}
+	
+	private String getFileName(DatagramPacket packet) {
+		return readBytes(2, packet.getData(), packet.getLength());
 	}
 
 	/**
