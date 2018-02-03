@@ -6,13 +6,23 @@ import java.net.SocketException;
 import java.util.Arrays;
 
 /**
- * @author BLoo
+ * @author Benjamin, Johan
  *
  */
 public class Server {
 	private DatagramSocket serverReceiveSocket;
-
 	private DatagramPacket sendPacket, receivePacket;
+	
+	/*
+	 * File transferred in 512-byte blocks, 1 block per packet transfer. Block < 512 bytes terminates transfer
+	 * Packet types: RRQ, WRQ, DATA, ACK, ERROR
+	 * TID(transfer ID)
+	 * Client gets random TID when a request is prepared, when a server grants a request it also gets a random TID
+	 * Source and destination TID associated with every packet but not stored in the packet, used as source/destination ports for UDP
+	 * Write: Client WRQ -> Server ACK Block 0 -> Client Data Block 1 -> Server ACK Block 1 -> Client Data Block 2 -> etc... Server ACK Block n
+	 * Read: Client RRQ -> Server Data Block 1 -> Client ACK Block 1 -> Server Data Block 2 -> etc... Client ACK Block n
+	 * RRQ acknowledged with DATA, WRQ by ACK
+	 * */
 
 	private final byte[] readResponce = { 0, 3, 0, 1 };
 	private final byte[] writeResponce = { 0, 4, 0, 0 };
