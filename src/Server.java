@@ -62,6 +62,20 @@ public class Server {
 	DatagramPacket receive() {
 		return receive(serverReceiveSocket);
 	}
+	
+	private class RequestReceiver extends Thread {
+		RequestReceiver(DatagramSocket requestSocket){
+			
+		}
+		
+		@Override
+		public void run() {
+			while(true) {
+				
+			}
+		}
+		
+	}
 
 	/**
 	 * Base receive method
