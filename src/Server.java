@@ -294,6 +294,7 @@ public class Server {
 	 */
 	private void readRequestHandler(DatagramPacket packet)
 	{
+		
 		/* 
 		 * List of byte arrays of max size 512 = Call parser here
 		 * 
@@ -324,6 +325,13 @@ public class Server {
 		 * Wait for next Data 
 		 * etc...
 		 */
+	}
+	
+	private List<byte[]> parseRRQ(String file)
+	{
+		
+		
+		return null;
 	}
 
 	/**
