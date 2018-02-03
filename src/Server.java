@@ -334,6 +334,7 @@ public class Server {
 	 */
 	private void readRequestHandler(DatagramPacket packet)
 	{
+		
 		/* 
 		 * List of byte arrays of max size 512 = Call parser here
 		 * 
@@ -352,7 +353,7 @@ public class Server {
 	 * 
 	 * @param packet
 	 */
-	private void writeRequestHandler(DatagramPacket packet) 
+	private void writeRequestHandler(DatagramPacket packet)
 	{
 		int blockNum = 0;
 		
@@ -396,6 +397,11 @@ public class Server {
 	private byte[] createAck(int blockNum) {
 		byte[] ack = new byte[] { 0, 4, (byte)(blockNum / 256), (byte)(blockNum % 256)};
 		return ack;
+		
+		
+		return null;
+		
+	private void createAck(int blockNum) {
 		
 	}
 	
