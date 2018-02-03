@@ -480,17 +480,11 @@ public class Server {
 		 * etc...
 		 */
 	}
-	}
+
 	
 	private byte[] createAck(int blockNum) {
 		byte[] ack = new byte[] { 0, 4, (byte)(blockNum / 256), (byte)(blockNum % 256)};
 		return ack;
-		
-		
-		return null;
-		
-	private void createAck(int blockNum) {
-		
 	}
 	
 	private String readBytes(int index, byte[] packet, int dataLength) {
