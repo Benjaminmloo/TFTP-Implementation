@@ -29,10 +29,12 @@ public class Server {
 	private static Map<Byte, String> RequestTypes;
 	static {
 		RequestTypes = new HashMap<>();
-		RequestTypes.put( (byte) 0, "null");
-		RequestTypes.put( (byte) 1, "WRQ");
-		RequestTypes.put( (byte) 2, "RRQ");
-		RequestTypes.put( (byte) 3, "ACK");
+		//RequestTypes.put( (byte) 0, "null"); Perhaps use as a shutdown request?
+		RequestTypes.put( (byte) 1, "RRQ");
+		RequestTypes.put( (byte) 2, "WRQ");
+		RequestTypes.put( (byte) 3, "DATA");
+		RequestTypes.put( (byte) 4, "ACK");
+		RequestTypes.put( (byte) 5, "ERROR");
 	}
 	
 	private final byte[] readResponce = { 0, 3, 0, 1 };
@@ -188,18 +190,30 @@ public class Server {
 		}
 	}
 	
-	private byte getRequest(DatagramPacket packet)
+	/**
+	 * 
+	 * Pulls request type from packet and returns
+	 * 
+	 * @param packet
+	 * @return	Returns request type
+	 * @throws IllegalArgumentException	When data is not in proper format or request is not a recognized type
+	 */
+	private byte getRequest(DatagramPacket packet) throws IllegalArgumentException
 	{
 		byte data[] = packet.getData();
 		
 		if(data[0] == 0 &&  data[data.length -1] == 0)
 		{
-			return data[1];
+			byte request = data[1];
+			if( RequestTypes.containsKey(request) )
+			{
+				return request;
+			}
+			else
+				throw new IllegalArgumentException();
 		}
 		else
-		{
-			return (byte) 0;
-		}
+			throw new IllegalArgumentException();
 	}
 	
 	/**
