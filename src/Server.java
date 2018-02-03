@@ -13,17 +13,19 @@ import java.util.Map;
  */
 public class Server {
 	/*
-	 * File transferred in 512-byte blocks, 1 block per packet transfer. Block < 512 bytes terminates transfer
-	 * Packet types: RRQ, WRQ, DATA, ACK, ERROR
-	 * TID(transfer ID)
-	 * Client gets random TID when a request is prepared, when a server grants a request it also gets a random TID
-	 * Source and destination TID associated with every packet but not stored in the packet, used as source/destination ports for UDP
-	 * Write: Client WRQ -> Server ACK Block 0 -> Client Data Block 1 -> Server ACK Block 1 -> Client Data Block 2 -> etc... Server ACK Block n
-	 * Read: Client RRQ -> Server Data Block 1 -> Client ACK Block 1 -> Server Data Block 2 -> etc... Client ACK Block n
-	 * RRQ acknowledged with DATA, WRQ by ACK
-	 * */
+	 * File transferred in 512-byte blocks, 1 block per packet transfer. Block < 512
+	 * bytes terminates transfer Packet types: RRQ, WRQ, DATA, ACK, ERROR
+	 * TID(transfer ID) Client gets random TID when a request is prepared, when a
+	 * server grants a request it also gets a random TID Source and destination TID
+	 * associated with every packet but not stored in the packet, used as
+	 * source/destination ports for UDP Write: Client WRQ -> Server ACK Block 0 ->
+	 * Client Data Block 1 -> Server ACK Block 1 -> Client Data Block 2 -> etc...
+	 * Server ACK Block n Read: Client RRQ -> Server Data Block 1 -> Client ACK
+	 * Block 1 -> Server Data Block 2 -> etc... Client ACK Block n RRQ acknowledged
+	 * with DATA, WRQ by ACK
+	 */
 	private DatagramSocket serverReceiveSocket;
-	
+
 	private DatagramPacket sendPacket, receivePacket;
 
 	private static Map<Byte, String> RequestTypes;
@@ -36,7 +38,7 @@ public class Server {
 		RequestTypes.put( (byte) 4, "ACK");
 		RequestTypes.put( (byte) 5, "ERROR");
 	}
-	
+
 	private final byte[] readResponce = { 0, 3, 0, 1 };
 	private final byte[] writeResponce = { 0, 4, 0, 0 };
 
@@ -53,7 +55,7 @@ public class Server {
 			System.exit(1);
 		}
 	}
-	
+
 	/**
 	 * Default receive method
 	 * 
@@ -64,19 +66,39 @@ public class Server {
 	DatagramPacket receive() {
 		return receive(serverReceiveSocket);
 	}
-	
+
 	private class RequestReceiver extends Thread {
-		RequestReceiver(DatagramSocket requestSocket){
-			
+		DatagramSocket requestSocket;
+
+		RequestReceiver(DatagramSocket requestSocket) {
+			this.requestSocket = requestSocket;
 		}
-		
+
 		@Override
 		public void run() {
-			while(true) {
-				
+			DatagramPacket receivedPacket;
+			while (true) {
+				receivedPacket = receive(requestSocket); // wait for new request packet
+				new ClientConnection(receivedPacket).start(); // start new client connection for the recently acquired
+																// request
 			}
 		}
-		
+
+	}
+
+	private class ClientConnection extends Thread {
+		SocketAddress returnAddress;
+
+		ClientConnection(DatagramPacket requestPacket) {
+			returnAddress = requestPacket.getSocketAddress(); // set the return address of the packet
+		}
+
+		@Override
+		public void run() {// TODO parse request then transfer files.
+			while (true) {
+
+			}
+		}
 	}
 
 	/**
@@ -139,14 +161,19 @@ public class Server {
 	 * methods the manages packet being received
 	 * 
 	 * sends any received packets to be processed by another method
+	 * @param threaded flag to determine whether or not to use threads to wait for request
 	 */
-	void waitForRequest() {
-		while (true) {
-			try {
-				processPacket(receive());
-			} catch (IllegalArgumentException e) {
-				e.printStackTrace();
-				System.exit(1);
+	void waitForRequest(boolean threaded) {
+		if (threaded) { 
+			new RequestReceiver(serverReceiveSocket).start();
+		} else {
+			while (true) {
+				try {
+					processPacket(receive());
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+					System.exit(1);
+				}
 			}
 		}
 	}
@@ -215,24 +242,22 @@ public class Server {
 		else
 			throw new IllegalArgumentException();
 	}
-	
+
 	/**
 	 * 
 	 * Checks for last data block
 	 * 
-	 * @param packet	Packet containing data block
-	 * @return	Boolean, returns false when the last packet has been received ie. 0 <= data size < 512
+	 * @param packet
+	 *            Packet containing data block
+	 * @return Boolean, returns false when the last packet has been received ie. 0
+	 *         <= data size < 512
 	 */
-	private boolean blockReceive(DatagramPacket packet)
-	{
+	private boolean blockReceive(DatagramPacket packet) {
 		byte data[] = packet.getData();
 		/* This checks for a data block */
-		if(data.length == 512)
-		{
+		if (data.length == 512) {
 			return true;
-		}
-		else
-		{
+		} else {
 			return false;
 		}
 	}
@@ -244,6 +269,6 @@ public class Server {
 	 */
 	public static void main(String[] args) {
 		Server s = new Server(69);
-		s.waitForRequest();
+		s.waitForRequest(false);
 	}
 }
