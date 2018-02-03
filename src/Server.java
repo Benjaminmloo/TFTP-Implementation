@@ -4,6 +4,7 @@ import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.util.Arrays;
+import org.apache.commons.net.tftp.TFTPPacket;
 
 /**
  * @author Benjamin, Johan
