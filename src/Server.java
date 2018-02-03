@@ -1,5 +1,7 @@
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.DatagramPacket;
@@ -249,7 +251,7 @@ public class Server {
 	}
 	
 	/**
-	 * 
+	 * @author BenjaminP
 	 * Handles packet requests
 	 * 
 	 * @param packet
@@ -292,12 +294,31 @@ public class Server {
 	}
 	
 	/**
-	 * 
+	 * @author BenjaminP
 	 * @param packet
 	 */
-	private void readRequestHandler(DatagramPacket packet)
+	private void readRequestHandler(DatagramPacket packet) throws IllegalArgumentException
 	{
+		List<byte[]> data = this.parseRRQ(this.getFileName(packet));
 		
+		for(int i = 0; i < data.size(); i++)
+		{
+			byte sendData[] = data.get(i);
+			this.send( sendData, packet.getSocketAddress() );
+			
+			DatagramPacket ackPacket = this.receive();
+			if(this.getRequest(ackPacket) != (byte) 4)
+			{
+				System.out.println("Not an ACK packet!");
+				throw new IllegalArgumentException();
+			}
+			
+			if( processACK(ackPacket.getData()) != i)
+			{
+				System.out.println("ACK for a different Block!");
+				throw new IllegalArgumentException();
+			}
+		}
 		/* 
 		 * List of byte arrays of max size 512 = Call parser here
 		 * 
@@ -310,6 +331,63 @@ public class Server {
 		 * this.send( 2nd array, packet.getSocketAddress);
 		 * Wait for ACK etc...
 		 */
+	}
+	
+	private int processACK(byte[] data)
+	{
+		return ((data[2] * 10) + data[3]);
+	}
+	
+	/**
+	 * @author BenjaminP
+	 * Parses given file to be sent through data packets
+	 * 
+	 * @param file
+	 * @return
+	 */
+	private List<byte[]> parseRRQ(String file)
+	{
+		String data = "";
+		try {
+			FileReader fileReader = new FileReader(file);
+			
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			
+			String line = null;
+			while(	(line = bufferedReader.readLine()) != null )
+			{
+				data = data.concat(" " + line);
+			}
+			
+			bufferedReader.close();
+			
+		} 
+		catch (FileNotFoundException e) {
+			e.printStackTrace();
+			System.exit(1);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		
+		List<byte[]> outList = new ArrayList<byte[]>();
+		byte byteData[] = data.getBytes();
+		for(int i = 0; i < byteData.length; i += 512)
+		{
+			byte temp[] = null;
+			if(i + 512 <= byteData.length)
+			{
+				temp = Arrays.copyOfRange(byteData, i, i + 512);
+				outList.add(temp);
+			}
+			else
+			{
+				temp = Arrays.copyOfRange(byteData, i, byteData.length);
+				outList.add(temp);
+			}
+		}
+		
+		return outList;
 	}
 	
 	/**
@@ -340,12 +418,6 @@ public class Server {
 		 * etc...
 		 */
 	}
-	
-	private List<byte[]> parseRRQ(String file)
-	{
-		
-		
-		return null;
 		
 	private void createAck(int blockNum) {
 		
