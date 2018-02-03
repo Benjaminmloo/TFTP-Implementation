@@ -8,6 +8,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -34,6 +35,8 @@ public class Server {
 	private DatagramSocket serverReceiveSocket;
 
 	private DatagramPacket sendPacket, receivePacket;
+	
+	private boolean verbose;
 
 	private static Map<Byte, String> RequestTypes;
 	static {
@@ -54,13 +57,17 @@ public class Server {
 	 * 
 	 * @param serverPort
 	 */
-	Server(int serverPort) {
+	Server(int serverPort, boolean verbose) {
+		this.verbose = verbose;
 		try {
 			serverReceiveSocket = new DatagramSocket(69);
 		} catch (SocketException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
+	}
+	Server(int serverPort) {
+		this(serverPort, true);
 	}
 
 	/**
@@ -116,9 +123,9 @@ public class Server {
 	 * @param socket
 	 * @return receivePacket unless there is an exception trying to receive
 	 */
-	DatagramPacket receive(DatagramSocket socket) {
+	DatagramPacket receive(DatagramSocket socket, int length) {
 		byte[] msg;
-		receivePacket = new DatagramPacket(new byte[100], 100);
+		receivePacket = new DatagramPacket(new byte[length], length);
 
 		try {
 			socket.receive(receivePacket);
@@ -134,6 +141,19 @@ public class Server {
 			System.exit(1);
 		}
 		return new DatagramPacket(new byte[0], 0);
+	}
+	
+
+	/**
+	 * Base receive method
+	 * 
+	 * Receives a DatagramPacket over the given socket
+	 * 
+	 * @param socket
+	 * @return receivePacket unless there is an exception trying to receive
+	 */
+	DatagramPacket receive(DatagramSocket socket) {
+		return receive(socket, 516);
 	}
 
 	/**
@@ -157,6 +177,23 @@ public class Server {
 
 			socket.send(sendPacket);
 			socket.close();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+	}
+	
+	void send(byte[] msg, DatagramSocket sendSocket, SocketAddress returnAddress) {
+		try {
+
+			sendPacket = new DatagramPacket(msg, msg.length, returnAddress);
+
+			System.out.println("Server Sending:");
+			System.out.println(new String(sendPacket.getData()));
+			System.out.println(Arrays.toString(sendPacket.getData()) + "\n");
+
+			sendSocket.send(sendPacket);
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -396,15 +433,40 @@ public class Server {
 	 */
 	private void writeRequestHandler(DatagramPacket packet)
 	{
-		int offset = 0;
-		int bytes = 0;
 		int blockNum = 0;
+		
 		SocketAddress returnAddress = packet.getSocketAddress();
+		DatagramSocket rrqSocket = null;
+		DatagramPacket newPacket;
+		OutputStream file = null;
 		try {
-			OutputStream file = new FileOutputStream(getFileName(packet));
-			//send()
-			
+			file = new FileOutputStream(getFileName(packet));
+			rrqSocket = new DatagramSocket();
+			send(createAck(blockNum), rrqSocket, returnAddress);
+			do{
+				newPacket = receive(rrqSocket, 516);
+				file.write(newPacket.getData(), 4, newPacket.getLength()); //write the data section of the packet to the file
+				send(createAck(++blockNum), rrqSocket, returnAddress); //send ack to the client
+			}while(newPacket.getLength() == 516); //continue while the packets are full
+			file.close(); //close the file when done
 		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			System.exit(1);
+		} catch (SocketException e) {
+			if(rrqSocket != null) {
+				rrqSocket.close();
+			}
+			try {
+				file.close();
+			} catch (IOException x) {
+				x.printStackTrace();
+			}
+			e.printStackTrace();
+			System.exit(1);
+		}catch (IOException e) {
+			if(rrqSocket != null) {
+				rrqSocket.close();
+			}
 			e.printStackTrace();
 			System.exit(1);
 		}
@@ -418,6 +480,14 @@ public class Server {
 		 * etc...
 		 */
 	}
+	}
+	
+	private byte[] createAck(int blockNum) {
+		byte[] ack = new byte[] { 0, 4, (byte)(blockNum / 256), (byte)(blockNum % 256)};
+		return ack;
+		
+		
+		return null;
 		
 	private void createAck(int blockNum) {
 		
@@ -425,7 +495,7 @@ public class Server {
 	
 	private String readBytes(int index, byte[] packet, int dataLength) {
 		String data = "";
-		while (index < dataLength && packet[index] != 0) {
+		while (index < dataLength - index && packet[index] != 0) {
 			data += (char) packet[index++];
 		}
 		return data;
