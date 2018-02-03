@@ -209,11 +209,13 @@ public class Server {
 	 * @param packet	Packet containing data block
 	 * @return	Boolean, returns false when the last packet has been received ie. 0 <= data size < 512
 	 */
-	private boolean blockReceive(DatagramPacket packet)
+	private boolean blockReceive(DatagramPacket packet) throws IllegalArgumentException
 	{
 		byte data[] = packet.getData();
-		/* This checks for a data block */
-		if(data.length == 512)
+		/* This checks for a data block number */
+		byte blockNum = (byte) ((data[2] * 10) + data[3]); //Converts the two separate bytes into one byte
+		
+		if( (data.length - 4) == 512)
 		{
 			return true;
 		}
