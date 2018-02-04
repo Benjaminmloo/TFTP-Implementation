@@ -1,12 +1,9 @@
 # 3303_Project
-/** READ ME FILE
-*
-* Project: Design and Implementation of file transfer system based on the TFTP
-* System consist of TFTP client - error - server.
-*
-* @author: Loo Ben, Nguyen Andrew, Morrissette Eric, Palko Ben, Westeinde Johan
-* 
-*/
+
+Project: Design and Implementation of file transfer system based on the TFTP
+System consist of TFTP client - error - server.
+@author: Loo Ben, Nguyen Andrew, Morrissette Eric, Palko Ben, Westeinde Johan
+
 
 ITERATION 1 w/ ITERATION 0
 
