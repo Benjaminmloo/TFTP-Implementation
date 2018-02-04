@@ -70,8 +70,6 @@ public class Server extends UDPConnection{
 		}
 	}
 
-	
-
 	/**
 	 * Start the sever waiting for request
 	 * 

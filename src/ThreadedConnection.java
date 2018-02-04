@@ -45,7 +45,8 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 	}
 	
 	/**
-	 * @author BenjaminP Handles packet requests
+	 * @author BenjaminP 
+	 * Handles packet requests
 	 * 
 	 * @param packet
 	 */
@@ -56,15 +57,13 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 		/* Read Request */
 		case 1:
 			// Respond with Data block 1 and 0 bytes of data
-			byte data[] = { 0, 3, 0, 1 };
-			this.send(data, packet.getSocketAddress());
+			this.readRequestHandler(packet);
 			break;
 
 		/* Write Request */
 		case 2:
 			// Respond with ACK block 0
-			byte data1[] = { 0, 4, 0, 0 };
-			this.send(data1, packet.getSocketAddress());
+			this.writeRequestHandler(packet);
 			break;
 
 		/* Data */
@@ -171,6 +170,7 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 	}
 	
 	/**
+	 * @author BenjaminP
 	 * 
 	 * @param data
 	 * @return
