@@ -4,7 +4,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -149,12 +148,10 @@ public abstract class UDPConnection {
 	DatagramPacket receive(DatagramSocket socket, int length) {
 		DatagramPacket receivedPacket;
 
-		byte[] msg;
 		receivedPacket = new DatagramPacket(new byte[length], length);
 
 		try {
 			socket.receive(receivedPacket);
-			msg = receivedPacket.getData();
 
 			if(verbose) {
 				System.out.println("Received:");
@@ -200,8 +197,7 @@ public abstract class UDPConnection {
 	 * @author BLoo
 	 */
 	protected String getData(DatagramPacket packet) {
-		String data  = readBytes(4, packet.getData(), packet.getLength());
-		if(verbose)System.out.println("new data: " + new String(data));
+		String data = readBytes(4, packet.getData(), packet.getLength());
 		return data;
 	}
 	
@@ -218,6 +214,10 @@ public abstract class UDPConnection {
 		dBuff.put(new byte[] { 0, 3, (byte) (blockNum / 256), (byte) (blockNum % 256)});
 		dBuff.put(data);
 		return packet;
+	}
+	
+	protected int getBlockNum(DatagramPacket packet) {
+		return packet.getData()[2] * 256 + packet.getData()[3];
 	}
 	
 

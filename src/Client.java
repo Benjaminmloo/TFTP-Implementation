@@ -26,7 +26,6 @@ public class Client extends UDPConnection {
 	private static byte transferType;
 	private String localFileName;
 	private String serverFileName;
-	private byte[] tempFile;
 	private ArrayList<byte[]> splitFile, tempFileToSave;
 
 	int blockNum = 0;
@@ -95,19 +94,22 @@ public class Client extends UDPConnection {
 
 	private void handleRequest(DatagramSocket connectionSocket) {
 		DatagramPacket newPacket;
-		byte[] data;
+		SocketAddress returnAddress;
+		byte[] packetData;
+		byte[] readData;
 		System.out.println("Num Blocks: " + blocks);
 		while(true) {
 			newPacket = receive(connectionSocket);
-			data = newPacket.getData();
+			returnAddress = newPacket.getSocketAddress();
+			packetData = newPacket.getData();
 			// make sure the correct data type is returned according to sent data.
-			if ((transferType == OP_WRQ && data[1] == OP_ACK) // if WRQ sent , ACK is expected.
-					|| (transferType == OP_RRQ && data[1] == OP_DATA))// if RRQ sent, DATA is expected
+			if ((transferType == OP_WRQ && packetData[1] == OP_ACK) // if WRQ sent , ACK is expected.
+					|| (transferType == OP_RRQ && packetData[1] == OP_DATA))// if RRQ sent, DATA is expected
 			{
 				// connection established begin transfer
 				if (transferType == OP_WRQ) { // send DATA to server 1 block at a time.
 					if(blockNum <= blocks) { 
-						send(createData(blockNum, splitFile.get(blockNum - 1)), connectionSocket, newPacket.getSocketAddress()); //TODO use UPDConnection.send() and write method to compile data packet
+						send(createData(blockNum, splitFile.get(blockNum - 1)), connectionSocket, returnAddress);
 						blockNum++;
 					}else {
 						closeConnection();
@@ -115,17 +117,18 @@ public class Client extends UDPConnection {
 	
 				}else if (transferType == OP_RRQ) { // store received data and send ACK to server.
 					// for now assume no packets or lost or duplicated, just process data.
+					if(getBlockNum(newPacket) == 1) {
+						tempFileToSave = new ArrayList<byte[]>();
+					}
+					readData = getData(newPacket).getBytes();
 	
-					byte[] tempData = Arrays.copyOfRange(data, 3, data.length);
-					System.out.println(new String(tempData, 0, tempData.length));
+					tempFileToSave.add(readData);
 	
-					tempFileToSave.add(tempData);
-	
-					sendACK(receivePacket.getPort());
+					send(createAck(getBlockNum(newPacket)), connectionSocket, returnAddress);
 	
 					// if message is less then 512 bytes, transfer is over. else ask for following
 					// block of data
-					if (tempData.length < 512) {
+					if (readData.length < 512) {
 						// file is fully transfered from server, save to appropriate location.
 						try {
 							saveFile();
@@ -209,38 +212,6 @@ public class Client extends UDPConnection {
 	}
 
 	/**
-	 * Sends DATA packet to server
-	 * 
-	 * @param data
-	 *            - 512 byte chunk of data to send to server
-	 * @param blockNum
-	 *            - current block# of file transfer
-	 * 
-	 */
-	public void sendDATA(byte[] data, int blockNum, int port) {
-
-		byte opCode = OP_DATA;
-		byte blockN = (byte) blockNum;
-		byte d[] = data;
-
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-		outputStream.write(opCode);
-		outputStream.write(blockNum);
-
-		try {
-			outputStream.write(d);
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-
-		byte msg[] = outputStream.toByteArray();
-
-		sendAPacket(msg, port);
-
-	}
-
-	/**
 	 * send a packet via datagram socket to server
 	 *
 	 * @param msg
@@ -293,7 +264,6 @@ public class Client extends UDPConnection {
 	public void splitFileToSend(String fileName) throws IOException {
 		byte[] buffer = new byte[512];
 		byte[]data;
-		String s;
 		splitFile = new ArrayList<byte[]>();
 		FileInputStream in = new FileInputStream(fileName);
 		int rc = in.read(buffer);
@@ -303,6 +273,7 @@ public class Client extends UDPConnection {
 			rc = in.read(buffer);
 			//if(verbose)System.out.println("New block: " + new String(buffer));
 		}
+		in.close();
 
 		//if(verbose)System.out.println(spiltFileToString(splitFile));
 		blocks = splitFile.size();
@@ -323,12 +294,12 @@ public class Client extends UDPConnection {
 	 */
 	public void saveFile() throws IOException {
 
-		FileOutputStream out = new FileOutputStream("src/test.txt");
+		FileOutputStream out = new FileOutputStream(localFileName);
 
 		for (int i = 0; i < tempFileToSave.size(); i++) {
 			out.write(tempFileToSave.get(i));
 		}
-
+		out.close();
 		blocks = splitFile.size();
 	}
 	
@@ -343,13 +314,15 @@ public class Client extends UDPConnection {
 
 	public void getUserInput() {
 
+		Scanner n = new Scanner(System.in);
+
 		// Get input from user for file transfer
 
 		while (true) { // get transfer mode
 			try {
-				Scanner n = new Scanner(System.in);
 				System.out.print("Verbose mode (true/false): ");
 				verbose = n.nextBoolean();
+				
 				break;
 			} catch (InputMismatchException e) {
 				System.out.println("Invalid input!");
@@ -359,7 +332,6 @@ public class Client extends UDPConnection {
 		while (true) { // get transfer type
 
 			try {
-				Scanner n = new Scanner(System.in);
 				System.out.print("RRQ(1) or WRQ(2): ");
 				transferType = n.nextByte();
 				if (transferType == 1 || transferType == 2) {
@@ -377,7 +349,6 @@ public class Client extends UDPConnection {
 
 			
 			try {
-				Scanner n = new Scanner(System.in);
 				System.out.print("Enter local File name (don't forget \"\\\\\"): ");
 				localFileName = n.next();
 				break;
@@ -389,15 +360,14 @@ public class Client extends UDPConnection {
 		while (true) { // get file name
 
 			try {
-				Scanner n = new Scanner(System.in);
 				System.out.print("Enter server File name (don't forget \"\\\\\"): ");
 				serverFileName = n.next();
-				n.close();
 				break;
 			} catch (InputMismatchException e) {
 				System.out.println("Invalid input!");
 			}
 		}
+		n.close();
 
 	}
 

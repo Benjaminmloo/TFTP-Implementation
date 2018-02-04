@@ -59,14 +59,14 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 		case 1:
 			// Respond with Data block 1 and 0 bytes of data
 
-			if(verbose)System.out.println("Handleing rrq");
+			//if(verbose)System.out.println("Handleing rrq");
 			readRequestHandler(packet);
 			break;
 
 		/* Write Request */
 		case 2:
 			// Respond with ACK block 0
-			if(verbose)System.out.println("Handleing wrq");
+			//if(verbose)System.out.println("Handleing wrq");
 			writeRequestHandler(packet);
 			break;
 
@@ -102,11 +102,11 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 			System.exit(1);
 		}
 		
-		for (int i = 0; i < data.size(); i++) {
-			byte sendData[] = data.get(i);
-			this.send(sendData, packet.getSocketAddress());
+		for (int i = 1; i <= data.size(); i++) {
+			byte sendData[] = data.get(i - 1);
+			this.send(createData(i , sendData), rrqSocket,  packet.getSocketAddress());
 
-			DatagramPacket ackPacket = this.receive(rrqSocket);;
+			DatagramPacket ackPacket = receive(rrqSocket);
 			if (this.getRequest(ackPacket) != (byte) 4) {
 				System.out.println("Not an ACK packet!");
 				throw new IllegalArgumentException();
