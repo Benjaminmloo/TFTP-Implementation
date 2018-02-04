@@ -38,16 +38,7 @@ public class Server extends UDPConnection{
 
 	private boolean verbose;
 
-	private static Map<Byte, String> RequestTypes;
-	static {
-		RequestTypes = new HashMap<>();
-		// RequestTypes.put( (byte) 0, "null"); Perhaps use as a shutdown request?
-		RequestTypes.put((byte) 1, "RRQ");
-		RequestTypes.put((byte) 2, "WRQ");
-		RequestTypes.put((byte) 3, "DATA");
-		RequestTypes.put((byte) 4, "ACK");
-		RequestTypes.put((byte) 5, "ERROR");
-	}
+	
 
 	/**
 	 * Constructor for a Server
@@ -68,22 +59,6 @@ public class Server extends UDPConnection{
 		this(serverPort, true);
 	}
 
-	
-	private class ClientConnection extends Thread {
-		SocketAddress returnAddress;
-
-		ClientConnection(DatagramPacket requestPacket) {
-			returnAddress = requestPacket.getSocketAddress(); // set the return address of the packet
-		}
-
-		@Override
-		public void run() {// TODO parse request then transfer files.
-			while (true) {
-
-			}
-		}
-	}
-
 
 	/**
 	 * methods the manages packet being received
@@ -100,7 +75,7 @@ public class Server extends UDPConnection{
 		while (true) {
 			try {
 				receivedPacket = receive(requestSocket); // wait for new request packet
-				new ClientConnection(receivedPacket).start(); // start new client connection for the recently acquired
+				new Thread(new ClientConnection(receivedPacket)).start(); // start new client connection for the recently acquired
 																// request
 			} catch (IllegalArgumentException e) {
 				e.printStackTrace();
@@ -109,6 +84,27 @@ public class Server extends UDPConnection{
 		}
 	}
 
+	
+
+	/**
+	 * Start the sever waiting for request
+	 * 
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		Server s = new Server(69);
+		s.waitForRequest();
+	}
+}
+
+
+class ClientConnection extends UDPConnection implements Runnable {
+	SocketAddress returnAddress;
+
+	ClientConnection(DatagramPacket requestPacket) {
+		returnAddress = requestPacket.getSocketAddress(); // set the return address of the packet
+	}
+	
 	/**
 	 * 
 	 * Pulls request type from packet and returns
@@ -348,13 +344,7 @@ public class Server extends UDPConnection{
 		return readBytes(2, packet.getData(), packet.getLength());
 	}
 
-	/**
-	 * Start the sever waiting for request
-	 * 
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		Server s = new Server(69);
-		s.waitForRequest();
+	@Override
+	public void run() {
 	}
 }
