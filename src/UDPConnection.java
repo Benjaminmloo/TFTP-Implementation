@@ -7,6 +7,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * @author bloo
+ *
+ */
 public abstract class UDPConnection {
 	private boolean verbose;
 	
@@ -22,6 +26,7 @@ public abstract class UDPConnection {
 	}
 	
 	/**
+	 * @author bloo
 	 * Base Send method
 	 * 
 	 * Sends byte[] msg to the returnAddress
@@ -51,6 +56,14 @@ public abstract class UDPConnection {
 		}
 	}
 
+	/**
+	 * @author bloo
+	 * Sends msg to return address over the given socket
+	 * 
+	 * @param msg - byte array to be sent 
+	 * @param sendSocket - socket that will be used to send packet
+	 * @param returnAddress - address the packet will be send too
+	 */
 	protected void send(byte[] msg, DatagramSocket sendSocket, SocketAddress returnAddress) {
 		DatagramPacket sendPacket;
 		try {
@@ -72,12 +85,13 @@ public abstract class UDPConnection {
 	
 
 	/**
+	 * @author bloo
 	 * creates a packet to be sent by base send() method
 	 * 
-	 * @param msg
-	 * @param socket
-	 * @param address
-	 * @param port
+	 * @param msg - byte array to be sent 
+	 * @param socket - socket that will be used to send packet
+	 * @param address -  address the packet will be send too
+	 * @param port -  port the packet will be send too
 	 */
 	protected void send(byte[] msg, DatagramSocket socket, InetAddress address, int port) {
 		DatagramPacket sendPacket = new DatagramPacket(msg, msg.length, address, port);
@@ -85,10 +99,11 @@ public abstract class UDPConnection {
 	}
 
 	/**
+	 * @author bloo
 	 * Base send method, used to send sendPacket over given socket
 	 * 
-	 * @param socket
-	 * @param sendPacket
+	 * @param socket - socket the packet will sent too
+	 * @param sendPacket - packet to be sent
 	 */
 	protected void send(DatagramSocket socket, DatagramPacket sendPacket) {
 		try {
@@ -108,23 +123,26 @@ public abstract class UDPConnection {
 	}
 	
 	/**
+	 * @author bloo
 	 * Base receive method
 	 * 
 	 * Receives a DatagramPacket over the given socket
 	 * 
-	 * @param socket
-	 * @return receivePacket unless there is an exception trying to receive
+	 * @param socket - socket packet will be received at
+	 * @return receivedPacket unless there is an exception trying to receive
 	 */
 	DatagramPacket receive(DatagramSocket socket) {
 		return receive(socket, 516);
 	}
 
 	/**
+	 * @author bloo
 	 * Base receive method
 	 * 
 	 * Receives a DatagramPacket over the given socket
 	 * 
-	 * @param socket
+	 * @param socket - socket to receive from
+	 * @param length - size of potential packet
 	 * @return receivePacket unless there is an exception trying to receive
 	 */
 	DatagramPacket receive(DatagramSocket socket, int length) {
@@ -151,17 +169,15 @@ public abstract class UDPConnection {
 
 	
 	/**
+	 * @author bloo
 	 * Reads bytes from a byte array at the start index into a string
 	 * 
-	 * @param index
-	 *            statring index of the data
-	 * @param packet
-	 *            byte array of packet data
-	 * @param dataLength
-	 *            the number of bytes of data
+	 * @param index - statring index of the data
+	 * @param packet - byte array of packet data
+	 * @param dataLength - the number of bytes of data
 	 * @return resulting String of data
 	 */
-	private String readBytes(int offset, byte[] packet, int dataLength) {
+	protected String readBytes(int offset, byte[] packet, int dataLength) {
 		String data = "";
 		int index = offset;
 		while (index < dataLength - offset && packet[index] != 0) {
@@ -171,9 +187,10 @@ public abstract class UDPConnection {
 	}
 	
 	/**
+	 * @author bloo
 	 * Parses a tftp packet in byte form and returns info
 	 * 
-	 * @param packet
+	 * @param packet - packet to convert
 	 * @return contents of a packet
 	 */
 	protected String packetToString(DatagramPacket packet) {

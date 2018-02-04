@@ -23,6 +23,7 @@ public class ErrorSimulator extends UDPConnection{
 	private boolean verbose;
 
 	/**
+	 * @author bloo
 	 * Base constructor for Host
 	 * 
 	 * @param clientPort
@@ -47,6 +48,7 @@ public class ErrorSimulator extends UDPConnection{
 	}
 
 	/**
+	 * @author bloo
 	 * Default constructor setting the client and servers ports to their defaults
 	 */
 	ErrorSimulator() {
@@ -54,6 +56,7 @@ public class ErrorSimulator extends UDPConnection{
 	}
 
 	/**
+	 * @auther bloo
 	 * @return clientReceiveSocket
 	 */
 	private DatagramSocket getClientReceiveSocket() {
@@ -61,6 +64,7 @@ public class ErrorSimulator extends UDPConnection{
 	}
 
 	/**
+	 * @author bloo
 	 * @return hostSocket
 	 */
 	private DatagramSocket getHostSocket() {
@@ -68,6 +72,7 @@ public class ErrorSimulator extends UDPConnection{
 	}
 
 	/**
+	 * @author bloo
 	 * @return serverPort
 	 */
 	public int getServerPort() {
@@ -75,6 +80,7 @@ public class ErrorSimulator extends UDPConnection{
 	}
 
 	/**
+	 * @author bloo
 	 * @return clientPort
 	 */
 	public int getClientPort() {
@@ -82,6 +88,7 @@ public class ErrorSimulator extends UDPConnection{
 	}	
 
 	/**
+	 * @author bloo
 	 * Passes packet to server and handles the response
 	 * 
 	 * @param packet
@@ -103,6 +110,7 @@ public class ErrorSimulator extends UDPConnection{
 	}
 
 	/**
+	 * @author bloo
 	 * Waits for packets and passes them onto their recipient
 	 * 
 	 */
@@ -117,6 +125,7 @@ public class ErrorSimulator extends UDPConnection{
 	}
 
 	/**
+	 * @author bloo
 	 * Control loop that mediates connection between client and server
 	 * 
 	 * @param args

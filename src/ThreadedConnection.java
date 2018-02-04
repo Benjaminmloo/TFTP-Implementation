@@ -180,7 +180,9 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 	}
 	
 	/**
-	 * 
+	 * @author bloo
+	 * handles write requests
+	 * receives data to be written from client and write it too a file
 	 * @param packet
 	 */
 	private void writeRequestHandler(DatagramPacket packet) {
@@ -225,10 +227,10 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 	}
 
 	/**
+	 * @author bloo
 	 * creates acknowledge packet based on given block number
 	 * 
-	 * @param blockNum
-	 *            - the current number the packet is acknowledging
+	 * @param blockNum - the current number the packet is acknowledging
 	 * @return byte array with acknowledge data
 	 */
 	private byte[] createAck(int blockNum) {
@@ -236,27 +238,9 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 		return ack;
 	}
 
-	/**
-	 * Reads bytes from a byte array at the start index into a string
-	 * 
-	 * @param index
-	 *            statring index of the data
-	 * @param packet
-	 *            byte array of packet data
-	 * @param dataLength
-	 *            the number of bytes of data
-	 * @return resulting String of data
-	 */
-	private String readBytes(int offset, byte[] packet, int dataLength) {
-		String data = "";
-		int index = offset;
-		while (index < dataLength - offset && packet[index] != 0) {
-			data += (char) packet[index++];
-		}
-		return data;
-	}
 
 	/**
+	 * @author bloo
 	 * Parses a tftp packet in byte form and returns info
 	 * 
 	 * @param packet
