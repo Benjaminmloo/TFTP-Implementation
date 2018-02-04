@@ -32,7 +32,7 @@ public class Server {
 	 * Block 1 -> Server Data Block 2 -> etc... Client ACK Block n RRQ acknowledged
 	 * with DATA, WRQ by ACK
 	 */
-	private DatagramSocket serverReceiveSocket;
+	private DatagramSocket requestSocket;
 
 	private DatagramPacket sendPacket, receivePacket;
 
@@ -60,7 +60,7 @@ public class Server {
 	Server(int serverPort, boolean verbose) {
 		this.verbose = verbose;
 		try {
-			serverReceiveSocket = new DatagramSocket(69);
+			requestSocket = new DatagramSocket(69);
 		} catch (SocketException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -79,26 +79,7 @@ public class Server {
 	 * @return
 	 */
 	DatagramPacket receive() {
-		return receive(serverReceiveSocket);
-	}
-
-	private class RequestReceiver extends Thread {
-		DatagramSocket requestSocket;
-
-		RequestReceiver(DatagramSocket requestSocket) {
-			this.requestSocket = requestSocket;
-		}
-
-		@Override
-		public void run() {
-			DatagramPacket receivedPacket;
-			while (true) {
-				receivedPacket = receive(requestSocket); // wait for new request packet
-				new ClientConnection(receivedPacket).start(); // start new client connection for the recently acquired
-																// request
-			}
-		}
-
+		return receive(requestSocket);
 	}
 
 	private class ClientConnection extends Thread {
@@ -210,17 +191,16 @@ public class Server {
 	 *            flag to determine whether or not to use threads to wait for
 	 *            request
 	 */
-	void waitForRequest(boolean threaded) {
-		if (threaded) {
-			new RequestReceiver(serverReceiveSocket).start();
-		} else {
-			while (true) {
-				try {
-					processPacket(receive());
-				} catch (IllegalArgumentException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}
+	void waitForRequest() {
+		DatagramPacket receivedPacket;
+		while (true) {
+			try {
+				receivedPacket = receive(requestSocket); // wait for new request packet
+				new ClientConnection(receivedPacket).start(); // start new client connection for the recently acquired
+																// request
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+				System.exit(1);
 			}
 		}
 	}
@@ -503,6 +483,6 @@ public class Server {
 	 */
 	public static void main(String[] args) {
 		Server s = new Server(69);
-		s.waitForRequest(false);
+		s.waitForRequest();
 	}
 }
