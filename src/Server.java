@@ -199,6 +199,10 @@ public class Server {
 					e.printStackTrace();
 					System.exit(1);
 				}
+			}
+		}
+	}
+	
 	void waitForRequest() {
 		DatagramPacket receivedPacket;
 		while (true) {
