@@ -198,9 +198,10 @@ public class ErrorSimulator {
 	 * @param dataLength the number of bytes of data
 	 * @return resulting String of data
 	 */
-	private String readBytes(int index, byte[] packet, int dataLength) {
+	private String readBytes(int offset, byte[] packet, int dataLength) {
 		String data = "";
-		while (index < dataLength && packet[index] != 0) {
+		int index = offset;
+		while (index < dataLength - offset && packet[index] != 0) {
 			data += (char) packet[index++];
 		}
 		return data;

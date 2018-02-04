@@ -35,18 +35,18 @@ public class Server {
 	private DatagramSocket serverReceiveSocket;
 
 	private DatagramPacket sendPacket, receivePacket;
-	
+
 	private boolean verbose;
 
 	private static Map<Byte, String> RequestTypes;
 	static {
 		RequestTypes = new HashMap<>();
-		//RequestTypes.put( (byte) 0, "null"); Perhaps use as a shutdown request?
-		RequestTypes.put( (byte) 1, "RRQ");
-		RequestTypes.put( (byte) 2, "WRQ");
-		RequestTypes.put( (byte) 3, "DATA");
-		RequestTypes.put( (byte) 4, "ACK");
-		RequestTypes.put( (byte) 5, "ERROR");
+		// RequestTypes.put( (byte) 0, "null"); Perhaps use as a shutdown request?
+		RequestTypes.put((byte) 1, "RRQ");
+		RequestTypes.put((byte) 2, "WRQ");
+		RequestTypes.put((byte) 3, "DATA");
+		RequestTypes.put((byte) 4, "ACK");
+		RequestTypes.put((byte) 5, "ERROR");
 	}
 
 	private final byte[] readResponce = { 0, 3, 0, 1 };
@@ -66,6 +66,7 @@ public class Server {
 			System.exit(1);
 		}
 	}
+
 	Server(int serverPort) {
 		this(serverPort, true);
 	}
@@ -142,7 +143,6 @@ public class Server {
 		}
 		return new DatagramPacket(new byte[0], 0);
 	}
-	
 
 	/**
 	 * Base receive method
@@ -183,7 +183,7 @@ public class Server {
 			System.exit(1);
 		}
 	}
-	
+
 	void send(byte[] msg, DatagramSocket sendSocket, SocketAddress returnAddress) {
 		try {
 
@@ -200,15 +200,18 @@ public class Server {
 			System.exit(1);
 		}
 	}
-	
+
 	/**
 	 * methods the manages packet being received
 	 * 
 	 * sends any received packets to be processed by another method
-	 * @param threaded flag to determine whether or not to use threads to wait for request
+	 * 
+	 * @param threaded
+	 *            flag to determine whether or not to use threads to wait for
+	 *            request
 	 */
 	void waitForRequest(boolean threaded) {
-		if (threaded) { 
+		if (threaded) {
 			new RequestReceiver(serverReceiveSocket).start();
 		} else {
 			while (true) {
@@ -260,201 +263,180 @@ public class Server {
 			throw new IllegalArgumentException();
 		}
 	}
-	
+
 	/**
 	 * 
 	 * Pulls request type from packet and returns
 	 * 
 	 * @param packet
-	 * @return	Returns request type
-	 * @throws IllegalArgumentException	When data is not in proper format or request is not a recognized type
+	 * @return Returns request type
+	 * @throws IllegalArgumentException
+	 *             When data is not in proper format or request is not a recognized
+	 *             type
 	 */
-	private byte getRequest(DatagramPacket packet) throws IllegalArgumentException
-	{
+	private byte getRequest(DatagramPacket packet) throws IllegalArgumentException {
 		byte data[] = packet.getData();
-		
-		if(data[0] == 0 &&  data[data.length -1] == 0)
-		{
+
+		if (data[0] == 0 && data[data.length - 1] == 0) {
 			byte request = data[1];
-			if( RequestTypes.containsKey(request) )
-			{
+			if (RequestTypes.containsKey(request)) {
 				return request;
-			}
-			else
+			} else
 				throw new IllegalArgumentException();
-		}
-		else
+		} else
 			throw new IllegalArgumentException();
 	}
-	
+
 	/**
-	 * @author BenjaminP
-	 * Handles packet requests
+	 * @author BenjaminP Handles packet requests
 	 * 
 	 * @param packet
 	 */
-	private void requestHandler(DatagramPacket packet)
-	{
+	private void requestHandler(DatagramPacket packet) {
 		byte request = this.getRequest(packet);
-		switch (request){
-			
-			/* Read Request */
-			case 1: 
-				// Respond with Data block 1 and 0 bytes of data
-				byte data[] = { 0, 3, 0, 1};
-				this.send(data, packet.getSocketAddress() );
-				break;
-				
-			/* Write Request */
-			case 2:
-				// Respond with ACK block 0
-				byte data1[] = { 0, 4, 0, 0};
-				this.send(data1, packet.getSocketAddress() );
-				break;
-				
-			/* Data */
-			case 3:
-				System.out.println("Received out of time DATA packet");
-				break;
-				
-			/* Acknowledge */
-			case 4:
-				System.out.println("Received out of time ACK packet");
-				break;
-				
-			/* Error */
-			case 5:
-				/* Currently does nothing */
-				break;
+		switch (request) {
+
+		/* Read Request */
+		case 1:
+			// Respond with Data block 1 and 0 bytes of data
+			byte data[] = { 0, 3, 0, 1 };
+			this.send(data, packet.getSocketAddress());
+			break;
+
+		/* Write Request */
+		case 2:
+			// Respond with ACK block 0
+			byte data1[] = { 0, 4, 0, 0 };
+			this.send(data1, packet.getSocketAddress());
+			break;
+
+		/* Data */
+		case 3:
+			System.out.println("Received out of time DATA packet");
+			break;
+
+		/* Acknowledge */
+		case 4:
+			System.out.println("Received out of time ACK packet");
+			break;
+
+		/* Error */
+		case 5:
+			/* Currently does nothing */
+			break;
 		}
-			
+
 	}
-	
+
 	/**
 	 * @author BenjaminP
 	 * @param packet
 	 */
-	private void readRequestHandler(DatagramPacket packet) throws IllegalArgumentException
-	{
+	private void readRequestHandler(DatagramPacket packet) throws IllegalArgumentException {
 		List<byte[]> data = this.parseRRQ(this.getFileName(packet));
-		
-		for(int i = 0; i < data.size(); i++)
-		{
+
+		for (int i = 0; i < data.size(); i++) {
 			byte sendData[] = data.get(i);
-			this.send( sendData, packet.getSocketAddress() );
-			
+			this.send(sendData, packet.getSocketAddress());
+
 			DatagramPacket ackPacket = this.receive();
-			if(this.getRequest(ackPacket) != (byte) 4)
-			{
+			if (this.getRequest(ackPacket) != (byte) 4) {
 				System.out.println("Not an ACK packet!");
 				throw new IllegalArgumentException();
 			}
-			
-			if( processACK(ackPacket.getData()) != i)
-			{
+
+			if (processACK(ackPacket.getData()) != i) {
 				System.out.println("ACK for a different Block!");
 				throw new IllegalArgumentException();
 			}
 		}
-		/* 
+		/*
 		 * List of byte arrays of max size 512 = Call parser here
 		 * 
-		 *  */
-		
-		/* 
-		 * LOOP
-		 * this.send( 1st array, packet.getSocketAddress);
-		 * Wait for ACK...
-		 * this.send( 2nd array, packet.getSocketAddress);
-		 * Wait for ACK etc...
+		 */
+
+		/*
+		 * LOOP this.send( 1st array, packet.getSocketAddress); Wait for ACK...
+		 * this.send( 2nd array, packet.getSocketAddress); Wait for ACK etc...
 		 */
 	}
-	
-	private int processACK(byte[] data)
-	{
+
+	private int processACK(byte[] data) {
 		return ((data[2] * 10) + data[3]);
 	}
-	
+
 	/**
-	 * @author BenjaminP
-	 * Parses given file to be sent through data packets
+	 * @author BenjaminP Parses given file to be sent through data packets
 	 * 
 	 * @param file
 	 * @return
 	 */
-	private List<byte[]> parseRRQ(String file)
-	{
+	private List<byte[]> parseRRQ(String file) {
 		String data = "";
 		try {
 			FileReader fileReader = new FileReader(file);
-			
+
 			BufferedReader bufferedReader = new BufferedReader(fileReader);
-			
+
 			String line = null;
-			while(	(line = bufferedReader.readLine()) != null )
-			{
+			while ((line = bufferedReader.readLine()) != null) {
 				data = data.concat(" " + line);
 			}
-			
+
 			bufferedReader.close();
-			
-		} 
-		catch (FileNotFoundException e) {
+
+		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 			System.exit(1);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		
+
 		List<byte[]> outList = new ArrayList<byte[]>();
 		byte byteData[] = data.getBytes();
-		for(int i = 0; i < byteData.length; i += 512)
-		{
+		for (int i = 0; i < byteData.length; i += 512) {
 			byte temp[] = null;
-			if(i + 512 <= byteData.length)
-			{
+			if (i + 512 <= byteData.length) {
 				temp = Arrays.copyOfRange(byteData, i, i + 512);
 				outList.add(temp);
-			}
-			else
-			{
+			} else {
 				temp = Arrays.copyOfRange(byteData, i, byteData.length);
 				outList.add(temp);
 			}
 		}
-		
+
 		return outList;
 	}
-	
+
 	/**
 	 * 
 	 * @param packet
 	 */
-	private void writeRequestHandler(DatagramPacket packet)
-	{
+	private void writeRequestHandler(DatagramPacket packet) {
 		int blockNum = 0;
-		
+
 		SocketAddress returnAddress = packet.getSocketAddress();
-		DatagramSocket rrqSocket = null;
+		DatagramSocket wrqSocket = null;
 		DatagramPacket newPacket;
 		OutputStream file = null;
 		try {
 			file = new FileOutputStream(getFileName(packet));
-			rrqSocket = new DatagramSocket();
-			send(createAck(blockNum), rrqSocket, returnAddress);
-			do{
-				newPacket = receive(rrqSocket, 516);
-				file.write(newPacket.getData(), 4, newPacket.getLength()); //write the data section of the packet to the file
-				send(createAck(++blockNum), rrqSocket, returnAddress); //send ack to the client
-			}while(newPacket.getLength() == 516); //continue while the packets are full
-			file.close(); //close the file when done
-		} catch (FileNotFoundException e) {
+			wrqSocket = new DatagramSocket();
+			send(createAck(blockNum), wrqSocket, returnAddress);
+			do {
+				newPacket = receive(wrqSocket, 516);
+				file.write(newPacket.getData(), 4, newPacket.getLength()); // write the data section of the packet to
+																			// the file
+				send(createAck(++blockNum), wrqSocket, returnAddress); // send ack to the client
+			} while (newPacket.getLength() == 516); // continue while the packets are full
+			file.close(); // close the file when done
+		} catch (FileNotFoundException e) { //catch any exceptions closing any necessary connections
 			e.printStackTrace();
 			System.exit(1);
 		} catch (SocketException e) {
-			if(rrqSocket != null) {
-				rrqSocket.close();
+			if (wrqSocket != null) {
+				wrqSocket.close();
 			}
 			try {
 				file.close();
@@ -463,38 +445,53 @@ public class Server {
 			}
 			e.printStackTrace();
 			System.exit(1);
-		}catch (IOException e) {
-			if(rrqSocket != null) {
-				rrqSocket.close();
+		} catch (IOException e) {
+			if (wrqSocket != null) {
+				wrqSocket.close();
 			}
 			e.printStackTrace();
 			System.exit(1);
 		}
-		/* 
-		 * LOOP
-		 * Send ACK block 0
-		 * Wait for next Data
-		 * file.add(receivedData);
-		 * Send ACK block 1
-		 * Wait for next Data 
-		 * etc...
-		 */
 	}
 
-	
+	/**
+	 * creates acknoledge packet based on given block number
+	 * 
+	 * @param blockNum
+	 *            - the current number the packet is acknowledging
+	 * @return byte array with acknowledge data
+	 */
 	private byte[] createAck(int blockNum) {
-		byte[] ack = new byte[] { 0, 4, (byte)(blockNum / 256), (byte)(blockNum % 256)};
+		byte[] ack = new byte[] { 0, 4, (byte) (blockNum / 256), (byte) (blockNum % 256) };
 		return ack;
 	}
-	
-	private String readBytes(int index, byte[] packet, int dataLength) {
+
+	/**
+	 * Reads bytes from a byte array at the start index into a string
+	 * 
+	 * @param index
+	 *            statring index of the data
+	 * @param packet
+	 *            byte array of packet data
+	 * @param dataLength
+	 *            the number of bytes of data
+	 * @return resulting String of data
+	 */
+	private String readBytes(int offset, byte[] packet, int dataLength) {
 		String data = "";
-		while (index < dataLength - index && packet[index] != 0) {
+		int index = offset;
+		while (index < dataLength - offset && packet[index] != 0) {
 			data += (char) packet[index++];
 		}
 		return data;
 	}
-	
+
+	/**
+	 * Parses a tftp packet in byte form and returns info
+	 * 
+	 * @param packet
+	 * @return contents of a packet
+	 */
 	private String getFileName(DatagramPacket packet) {
 		return readBytes(2, packet.getData(), packet.getLength());
 	}
