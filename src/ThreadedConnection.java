@@ -10,15 +10,15 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-public class ThreadedConnections extends UDPConnection{
+public class ThreadedConnection extends UDPConnection implements Runnable{
 	
-	public ThreadedConnections(DatagramPacket p)
+	private DatagramPacket requestPacket;
+	
+	public ThreadedConnection(DatagramPacket p)
 	{
-		requestHandler(p);
+		requestPacket = p;
 	}
 	
 	/**
@@ -225,7 +225,7 @@ public class ThreadedConnections extends UDPConnection{
 	}
 
 	/**
-	 * creates acknoledge packet based on given block number
+	 * creates acknowledge packet based on given block number
 	 * 
 	 * @param blockNum
 	 *            - the current number the packet is acknowledging
@@ -264,5 +264,10 @@ public class ThreadedConnections extends UDPConnection{
 	 */
 	private String getFileName(DatagramPacket packet) {
 		return readBytes(2, packet.getData(), packet.getLength());
+	}
+
+	@Override
+	public void run() {
+		requestHandler(requestPacket);
 	}
 }
