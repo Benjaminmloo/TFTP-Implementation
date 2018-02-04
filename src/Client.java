@@ -6,11 +6,19 @@ import java.util.Arrays;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
+/**
+ * Author : Eric Morrissette
+ * 
+ * TFTP Client
+ */
+
 public class Client {
 
+	
 	private DatagramPacket sendPacket, receivePacket;
 	private DatagramSocket sendReceiveSocket;
 
+	// OPCODES for TFTP transfer
 	private static final byte OP_WRQ = 1;
 	private static final byte OP_RRQ = 2;
 	private static final byte OP_DATA = 3;
@@ -31,6 +39,7 @@ public class Client {
 
 	public Client() {
 
+		// Create datagram socket to send and receive packets
 		try {
 			sendReceiveSocket = new DatagramSocket();
 		} catch (SocketException se) { // Can't create the socket.
@@ -39,10 +48,13 @@ public class Client {
 		}
 	}
 
+	/**
+	 * Establishes either a WRQ or RRQ connection to the server, depending on user specification
+	 */
 	public void establishConnection() {
 
 		// create message for DatagramPacket
-		byte opCode = transferType;
+		byte opCode = transferType;  // WRQ or RRQ
 		byte file[] = fileName.getBytes();
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -54,7 +66,6 @@ public class Client {
 			outputStream.write(ZERO_BYTE);
 
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 
@@ -62,11 +73,14 @@ public class Client {
 
 		sendAPacket(msg);
 	}
+	
+	/**
+	 * Receives data packets from server, handled according to opcode.
+	 */
 
 	public void receive() throws IOException {
 
 		byte data[] = new byte[100];
-
 		receivePacket = new DatagramPacket(data, data.length);
 
 		try {
@@ -78,7 +92,7 @@ public class Client {
 			System.exit(1);
 		}
 
-		if (verbose) {
+		if (verbose) { // print out details in verbose mode
 			System.out.println("Client: Packet received:");
 			System.out.println("From host: " + receivePacket.getAddress());
 			System.out.println("Host port: " + receivePacket.getPort());
@@ -97,13 +111,14 @@ public class Client {
 			
 		}
 
-		if ((transferType == OP_WRQ && data[0] == OP_ACK) // if WRQ , ACK is expected.
-				|| (transferType == OP_RRQ && data[0] == OP_DATA))// if RRQ, DATA is expected
+		// make sure the correct data type is returned according to sent data.
+		if ((transferType == OP_WRQ && data[0] == OP_ACK) // if WRQ sent , ACK is expected.
+				|| (transferType == OP_RRQ && data[0] == OP_DATA))// if RRQ sent, DATA is expected
 		{
 			// connection established begin transfer
-			if (transferType == OP_WRQ) { // send DATA to server.
+			if (transferType == OP_WRQ) { // send DATA to server 1 block at a time.
 
-				if (blockNum < blocks) {
+				if (blockNum < blocks) { 
 					sendDATA(splitFile.get(blockNum).getBytes(), blockNum);
 					blockNum++;
 					receive();
@@ -126,10 +141,10 @@ public class Client {
 				// if message is less then 512 bytes, transfer is over. else ask for following
 				// block of data
 				if (tempData.length < 512) {
+					// file is fully transfered from server, save to appropriate location.
 					saveFile();
 					closeConnection();
 				}
-
 				receive();
 
 			}
@@ -138,13 +153,18 @@ public class Client {
 			closeConnection();
 		}
 	}
-	
+	/**
+	 * closes the datagram socket and quits the program
+	 */
 	public void closeConnection() {
 		
 		sendReceiveSocket.close();
 		System.exit(1);
 	}
 
+	/**
+	 * Sends ACK packet to server
+	 */
 	public void sendACK() {
 
 		byte opCode = OP_ACK;
@@ -160,6 +180,13 @@ public class Client {
 		sendAPacket(msg);
 	}
 
+	/**
+	 * Sends DATA packet to server
+	 * 
+	 * @param  data - 512 byte chunk of data to send to server
+	 * @param  blockNum - current block# of file transfer
+	 * 
+	 */
 	public void sendDATA(byte[] data, int blockNum) {
 
 		byte opCode = OP_DATA;
@@ -183,6 +210,12 @@ public class Client {
 
 	}
 
+	/**
+	 * send a packet via datagram socket to server
+	 *
+	 * @param  msg - data to be sent via packet to server
+	 * 
+	 */
 	public void sendAPacket(byte[] msg) {
 
 		try {
@@ -192,7 +225,7 @@ public class Client {
 			System.exit(1);
 		}
 
-		if (verbose) {
+		if (verbose) { // print out info in verbose mode.
 			System.out.println("Client: Sending packet:");
 			System.out.println("To host: " + sendPacket.getAddress());
 			System.out.println("Destination host port: " + sendPacket.getPort());
@@ -220,6 +253,11 @@ public class Client {
 
 	}
 
+	/**
+	 * Split file into 512 byte chunks
+	 * 
+	 * @param fileName - file to be split
+	 */
 	public void splitFileToSend(String fileName) throws IOException {
 		byte[] buffer = new byte[512];
 
@@ -234,6 +272,10 @@ public class Client {
 		blocks = splitFile.size();
 	}
 
+	/**
+	 * Saves fully transfered file to appropriate location, used during RRQ transfer
+	 * 
+	 */
 	public void saveFile() throws IOException {
 
 		FileOutputStream out = new FileOutputStream("src/test.txt");
@@ -244,10 +286,14 @@ public class Client {
 
 		blocks = splitFile.size();
 	}
+	
+	/**
+	 * Basic UI, gets input from user
+	 * ** WILL be upgraded in future iterations.
+	 */
 
 	public void getUserInput() {
 
-		
 		// Get input from user for file transfer
 
 		while (true) { // get transfer mode
