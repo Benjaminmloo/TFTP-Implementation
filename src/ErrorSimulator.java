@@ -16,11 +16,8 @@ public class ErrorSimulator extends UDPConnection{
 	private DatagramSocket eSimSocket;
 	private DatagramSocket sendSocket;
 
-	private DatagramPacket sendPacket;
-	private DatagramPacket receivePacket;
 
 	private int eSimPort, serverPort;
-	private boolean verbose;
 
 	/**
 	 * @author bloo

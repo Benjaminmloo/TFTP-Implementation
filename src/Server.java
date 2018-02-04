@@ -20,19 +20,17 @@ public class Server extends UDPConnection{
 	 * Block 1 -> Server Data Block 2 -> etc... Client ACK Block n RRQ acknowledged
 	 * with DATA, WRQ by ACK
 	 */
-	private DatagramSocket requestSocket;
-
-	private boolean verbose;
-
-	
+	private DatagramSocket requestSocket;	
 
 	/**
+	 * @author bloo
 	 * Constructor for a Server
 	 * 
-	 * @param serverPort
+	 * @param serverPort - port for server to receive requests from
+	 * @param verbose - whether or not the server will be verbose
 	 */
-	Server(int serverPort, boolean v) {
-		this.verbose = v;
+	Server(int serverPort, boolean verbose) {
+		this.verbose = verbose;
 		try {
 			requestSocket = new DatagramSocket(69);
 		} catch (SocketException e) {
@@ -41,12 +39,19 @@ public class Server extends UDPConnection{
 		}
 	}
 
+	/**
+	 * @author bloo
+	 * Constructor for a Server
+	 * 
+	 * @param serverPort - port for server to receive requests from
+	 */
 	Server(int serverPort) {
 		this(serverPort, true);
 	}
 
 
 	/**
+	 * @author bloo
 	 * methods the manages packet being received
 	 * 
 	 * sends any received packets to be processed by another method
@@ -71,6 +76,7 @@ public class Server extends UDPConnection{
 	}
 
 	/**
+	 * @author bloo
 	 * Start the sever waiting for request
 	 * 
 	 * @param args

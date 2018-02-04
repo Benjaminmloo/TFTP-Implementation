@@ -12,9 +12,8 @@ import java.util.Scanner;
  * TFTP Client
  */
 
-public class Client {
+public class Client extends UDPConnection {
 
-	
 	private DatagramPacket sendPacket, receivePacket;
 	private DatagramSocket sendReceiveSocket;
 
@@ -49,31 +48,101 @@ public class Client {
 	}
 
 	/**
-	 * Establishes either a WRQ or RRQ connection to the server, depending on user specification
+	 * Establishes either a WRQ or RRQ connection to the server, depending on user
+	 * specification
 	 */
 	public void establishConnection() {
-
-		// create message for DatagramPacket
-		byte opCode = transferType;  // WRQ or RRQ
-		byte file[] = fileName.getBytes();
-
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		DatagramSocket connectionSocket;
 		try {
-			outputStream.write(opCode);
-			outputStream.write(file);
-			outputStream.write(ZERO_BYTE);
-			outputStream.write(MODE);
-			outputStream.write(ZERO_BYTE);
-
-		} catch (IOException e1) {
-			e1.printStackTrace();
+			connectionSocket = new DatagramSocket();
+			// create message for DatagramPacket
+			byte opCode = transferType; // WRQ or RRQ
+			byte file[] = fileName.getBytes();
+	
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			try {
+				outputStream.write(ZERO_BYTE);
+				outputStream.write(opCode);
+				outputStream.write(file);
+				outputStream.write(ZERO_BYTE);
+				outputStream.write(MODE);
+				outputStream.write(ZERO_BYTE);
+	
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+	
+			byte msg[] = outputStream.toByteArray();
+	
+			try {
+				send(msg, connectionSocket, InetAddress.getLocalHost(), 23);
+				handleRequest(connectionSocket);
+	
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+			
+		} catch (SocketException e2) {
+			e2.printStackTrace();
+			System.exit(1);
 		}
 
-		byte msg[] = outputStream.toByteArray();
-
-		sendAPacket(msg,23);
 	}
+
+	private void handleRequest(DatagramSocket connectionSocket) {
+		DatagramPacket newPacket;
+		byte[] data;
+
+		while(true) {
+			newPacket = receive(connectionSocket);
+			data = newPacket.getData();
+			// make sure the correct data type is returned according to sent data.
+			if ((transferType == OP_WRQ && data[1] == OP_ACK) // if WRQ sent , ACK is expected.
+					|| (transferType == OP_RRQ && data[1] == OP_DATA))// if RRQ sent, DATA is expected
+			{
+				// connection established begin transfer
+				if (transferType == OP_WRQ) { // send DATA to server 1 block at a time.
 	
+					if(blockNum < blocks) { 
+						sendDATA(splitFile.get(blockNum).getBytes(), blockNum, receivePacket.getPort());
+						blockNum++;
+					}
+	
+					// file transfer done, close the connection
+					closeConnection();
+	
+				}
+				if (transferType == OP_RRQ) { // store received data and send ACK to server.
+					// for now assume no packets or lost or duplicated, just process data.
+	
+					byte[] tempData = Arrays.copyOfRange(data, 3, data.length);
+					System.out.println(new String(tempData, 0, tempData.length));
+	
+					tempFileToSave.add(tempData.toString());
+	
+					sendACK(receivePacket.getPort());
+	
+					// if message is less then 512 bytes, transfer is over. else ask for following
+					// block of data
+					if (tempData.length < 512) {
+						// file is fully transfered from server, save to appropriate location.
+						try {
+							saveFile();
+						} catch (IOException e) {
+							e.printStackTrace();
+							System.exit(1);
+						}
+						closeConnection();
+					}	
+				}
+			} else {
+				// connection to server was lost.
+				closeConnection();
+			}
+		}
+	}
+
 	/**
 	 * Receives data packets from server, handled according to opcode.
 	 */
@@ -108,56 +177,15 @@ public class Client {
 			// print byte array"
 			//
 			System.out.println(Arrays.toString(data).substring(0, 11) + "]\n");
-			
-		}
 
-		// make sure the correct data type is returned according to sent data.
-		if ((transferType == OP_WRQ && data[0] == OP_ACK) // if WRQ sent , ACK is expected.
-				|| (transferType == OP_RRQ && data[0] == OP_DATA))// if RRQ sent, DATA is expected
-		{
-			// connection established begin transfer
-			if (transferType == OP_WRQ) { // send DATA to server 1 block at a time.
-
-				if (blockNum < blocks) { 
-					sendDATA(splitFile.get(blockNum).getBytes(), blockNum, receivePacket.getPort());
-					blockNum++;
-					receive();
-				}
-
-				// file transfer done, close the connection
-				closeConnection();
-
-			}
-			if (transferType == OP_RRQ) { // store received data and send ACK to server.
-				// for now assume no packets or lost or duplicated, just process data.
-
-				byte[] tempData = Arrays.copyOfRange(data, 3, data.length);
-				System.out.println(new String(tempData, 0, tempData.length));
-
-				tempFileToSave.add(tempData.toString());
-
-				sendACK(receivePacket.getPort());
-
-				// if message is less then 512 bytes, transfer is over. else ask for following
-				// block of data
-				if (tempData.length < 512) {
-					// file is fully transfered from server, save to appropriate location.
-					saveFile();
-					closeConnection();
-				}
-				receive();
-
-			}
-		} else {
-			// connection to server was lost.
-			closeConnection();
 		}
 	}
+
 	/**
 	 * closes the datagram socket and quits the program
 	 */
 	public void closeConnection() {
-		
+
 		sendReceiveSocket.close();
 		System.exit(1);
 	}
@@ -177,14 +205,16 @@ public class Client {
 
 		byte msg[] = outputStream.toByteArray();
 
-		sendAPacket(msg,port);
+		sendAPacket(msg, port);
 	}
 
 	/**
 	 * Sends DATA packet to server
 	 * 
-	 * @param  data - 512 byte chunk of data to send to server
-	 * @param  blockNum - current block# of file transfer
+	 * @param data
+	 *            - 512 byte chunk of data to send to server
+	 * @param blockNum
+	 *            - current block# of file transfer
 	 * 
 	 */
 	public void sendDATA(byte[] data, int blockNum, int port) {
@@ -206,14 +236,15 @@ public class Client {
 
 		byte msg[] = outputStream.toByteArray();
 
-		sendAPacket(msg,port);
+		sendAPacket(msg, port);
 
 	}
 
 	/**
 	 * send a packet via datagram socket to server
 	 *
-	 * @param  msg - data to be sent via packet to server
+	 * @param msg
+	 *            - data to be sent via packet to server
 	 * 
 	 */
 	public void sendAPacket(byte[] msg, int port) {
@@ -256,12 +287,14 @@ public class Client {
 	/**
 	 * Split file into 512 byte chunks
 	 * 
-	 * @param fileName - file to be split
+	 * @param fileName
+	 *            - file to be split
 	 */
 	public void splitFileToSend(String fileName) throws IOException {
 		byte[] buffer = new byte[512];
 
-		FileInputStream in = new FileInputStream("src/test.txt");
+		splitFile = new ArrayList<String>();
+		FileInputStream in = new FileInputStream(fileName);
 		int rc = in.read(buffer);
 		while (rc != -1) {
 			splitFile.add(buffer.toString());
@@ -286,10 +319,9 @@ public class Client {
 
 		blocks = splitFile.size();
 	}
-	
+
 	/**
-	 * Basic UI, gets input from user
-	 * ** WILL be upgraded in future iterations.
+	 * Basic UI, gets input from user ** WILL be upgraded in future iterations.
 	 */
 
 	public void getUserInput() {
@@ -328,7 +360,7 @@ public class Client {
 
 			try {
 				Scanner n = new Scanner(System.in);
-				System.out.print("Enter File name (don't forget \"\"): ");
+				System.out.print("Enter File name (don't forget \"\\\\\"): ");
 				fileName = n.next();
 				n.close();
 				break;
@@ -336,8 +368,6 @@ public class Client {
 				System.out.println("Invalid input!");
 			}
 		}
-
-		
 
 	}
 
@@ -348,7 +378,7 @@ public class Client {
 		c.getUserInput();
 
 		if (transferType == OP_WRQ) {
-			c.splitFileToSend("test.txt");
+			c.splitFileToSend(fileName);
 		}
 
 		// Establish TFTP connection to server

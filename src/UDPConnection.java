@@ -12,7 +12,7 @@ import java.util.Map;
  *
  */
 public abstract class UDPConnection {
-	private boolean verbose;
+	protected boolean verbose;
 	
 	protected static Map<Byte, String> RequestTypes;
 	static {
@@ -180,7 +180,7 @@ public abstract class UDPConnection {
 	protected String readBytes(int offset, byte[] packet, int dataLength) {
 		String data = "";
 		int index = offset;
-		while (index < dataLength - offset && packet[index] != 0) {
+		while (index < dataLength && packet[index] != 0) {
 			data += (char) packet[index++];
 		}
 		return data;
