@@ -11,25 +11,24 @@ import java.util.Map;
  * @author bloo
  *
  */
-public abstract class UDPConnection {
+public abstract class TFTPConnection {
 	protected boolean verbose;
-	
-	protected static Map<Byte, String> RequestTypes;
+
+	protected static Map<Byte, String> PacketTypes;
 	static {
-		RequestTypes = new HashMap<>();
+		PacketTypes = new HashMap<>();
 		// RequestTypes.put( (byte) 0, "null"); Perhaps use as a shutdown request?
-		RequestTypes.put((byte) 1, "RRQ");
-		RequestTypes.put((byte) 2, "WRQ");
-		RequestTypes.put((byte) 3, "DATA");
-		RequestTypes.put((byte) 4, "ACK");
-		RequestTypes.put((byte) 5, "ERROR");
+		PacketTypes.put((byte) 1, "RRQ");
+		PacketTypes.put((byte) 2, "WRQ");
+		PacketTypes.put((byte) 3, "DATA");
+		PacketTypes.put((byte) 4, "ACK");
+		PacketTypes.put((byte) 5, "ERROR");
 	}
-	
+
 	/**
-	 * @author bloo
-	 * Base Send method
+	 * @author bloo Base Send method
 	 * 
-	 * Sends byte[] msg to the returnAddress
+	 *         Sends byte[] msg to the returnAddress
 	 * 
 	 * @param msg
 	 * @param returnAddress
@@ -41,8 +40,8 @@ public abstract class UDPConnection {
 			socket = new DatagramSocket();
 
 			sendPacket = new DatagramPacket(msg, msg.length, returnAddress);
-			
-			if(verbose) {
+
+			if (verbose) {
 				System.out.println("Sending:");
 				System.out.println(packetToString(sendPacket));
 			}
@@ -57,12 +56,14 @@ public abstract class UDPConnection {
 	}
 
 	/**
-	 * @author bloo
-	 * Sends msg to return address over the given socket
+	 * @author bloo Sends msg to return address over the given socket
 	 * 
-	 * @param msg - byte array to be sent 
-	 * @param sendSocket - socket that will be used to send packet
-	 * @param returnAddress - address the packet will be send too
+	 * @param msg
+	 *            - byte array to be sent
+	 * @param sendSocket
+	 *            - socket that will be used to send packet
+	 * @param returnAddress
+	 *            - address the packet will be send too
 	 */
 	protected void send(byte[] msg, DatagramSocket sendSocket, SocketAddress returnAddress) {
 		DatagramPacket sendPacket;
@@ -70,7 +71,7 @@ public abstract class UDPConnection {
 
 			sendPacket = new DatagramPacket(msg, msg.length, returnAddress);
 
-			if(verbose) {
+			if (verbose) {
 				System.out.println("Sending: ");
 				System.out.println(packetToString(sendPacket));
 			}
@@ -82,16 +83,18 @@ public abstract class UDPConnection {
 			System.exit(1);
 		}
 	}
-	
 
 	/**
-	 * @author bloo
-	 * creates a packet to be sent by base send() method
+	 * @author bloo creates a packet to be sent by base send() method
 	 * 
-	 * @param msg - byte array to be sent 
-	 * @param socket - socket that will be used to send packet
-	 * @param address -  address the packet will be send too
-	 * @param port -  port the packet will be send too
+	 * @param msg
+	 *            - byte array to be sent
+	 * @param socket
+	 *            - socket that will be used to send packet
+	 * @param address
+	 *            - address the packet will be send too
+	 * @param port
+	 *            - port the packet will be send too
 	 */
 	protected void send(byte[] msg, DatagramSocket socket, InetAddress address, int port) {
 		DatagramPacket sendPacket = new DatagramPacket(msg, msg.length, address, port);
@@ -99,11 +102,12 @@ public abstract class UDPConnection {
 	}
 
 	/**
-	 * @author bloo
-	 * Base send method, used to send sendPacket over given socket
+	 * @author bloo Base send method, used to send sendPacket over given socket
 	 * 
-	 * @param socket - socket the packet will sent too
-	 * @param sendPacket - packet to be sent
+	 * @param socket
+	 *            - socket the packet will sent too
+	 * @param sendPacket
+	 *            - packet to be sent
 	 */
 	protected void send(DatagramSocket socket, DatagramPacket sendPacket) {
 		try {
@@ -121,14 +125,14 @@ public abstract class UDPConnection {
 			System.exit(1);
 		}
 	}
-	
+
 	/**
-	 * @author bloo
-	 * Base receive method
+	 * @author bloo Base receive method
 	 * 
-	 * Receives a DatagramPacket over the given socket
+	 *         Receives a DatagramPacket over the given socket
 	 * 
-	 * @param socket - socket packet will be received at
+	 * @param socket
+	 *            - socket packet will be received at
 	 * @return receivedPacket unless there is an exception trying to receive
 	 */
 	DatagramPacket receive(DatagramSocket socket) {
@@ -136,13 +140,14 @@ public abstract class UDPConnection {
 	}
 
 	/**
-	 * @author bloo
-	 * Base receive method
+	 * @author bloo Base receive method
 	 * 
-	 * Receives a DatagramPacket over the given socket
+	 *         Receives a DatagramPacket over the given socket
 	 * 
-	 * @param socket - socket to receive from
-	 * @param length - size of potential packet
+	 * @param socket
+	 *            - socket to receive from
+	 * @param length
+	 *            - size of potential packet
 	 * @return receivePacket unless there is an exception trying to receive
 	 */
 	DatagramPacket receive(DatagramSocket socket, int length) {
@@ -153,7 +158,7 @@ public abstract class UDPConnection {
 		try {
 			socket.receive(receivedPacket);
 
-			if(verbose) {
+			if (verbose) {
 				System.out.println("Received:");
 				System.out.println(packetToString(receivedPacket));
 			}
@@ -164,35 +169,27 @@ public abstract class UDPConnection {
 		}
 		return new DatagramPacket(new byte[0], 0);
 	}
-	
-	/**
-	 * @author BenjaminP
-	 * 
-	 * @param data
-	 * @return
-	 */
-	protected int processACK(byte[] data) {
-		return ((data[2] * 10) + data[3]);
-	}
-	
+
 	/**
 	 * creates acknowledge packet based on given block number
 	 * 
-	 * @param blockNum - the current number the packet is acknowledging
+	 * @param blockNum
+	 *            - the current number the packet is acknowledging
 	 * @return byte array with acknowledge data
 	 * @author bloo
 	 */
 	protected byte[] createAck(int blockNum) {
 		byte[] ack = new byte[] { 0, 4, (byte) (blockNum / 256), (byte) (blockNum % 256) };
-		if(verbose)System.out.println("new ack: " + new String(ack));
+		if (verbose)
+			System.out.println("new ack: " + new String(ack));
 		return ack;
 	}
-	
-	
+
 	/**
 	 * Retreive the data in a packet in the form of a string
 	 * 
-	 * @param packet - the packet the data will be extracted from
+	 * @param packet
+	 *            - the packet the data will be extracted from
 	 * @return the data in the form of a string
 	 * @author BLoo
 	 */
@@ -200,35 +197,52 @@ public abstract class UDPConnection {
 		String data = readBytes(4, packet.getData(), packet.getLength());
 		return data;
 	}
-	
+
 	/**
-	 * Creates Data packet 
-	 * @param blockNum - the block num of the blcok being sent
-	 * @param data - the data being sent 
+	 * Creates Data packet
+	 * 
+	 * @param blockNum
+	 *            - the block num of the blcok being sent
+	 * @param data
+	 *            - the data being sent
 	 * @return packet in the form of a byte array
 	 * @author BLoo
 	 */
 	protected byte[] createData(int blockNum, byte[] data) {
 		byte[] packet = new byte[4 + data.length];
 		ByteBuffer dBuff = ByteBuffer.wrap(packet);
-		dBuff.put(new byte[] { 0, 3, (byte) (blockNum / 256), (byte) (blockNum % 256)});
+		dBuff.put(new byte[] { 0, 3, (byte) (blockNum / 256), (byte) (blockNum % 256) });
 		dBuff.put(data);
 		return packet;
 	}
-	
+
+	/**
+	 * @author bloo Parses a tftp packet in byte form and returns info
+	 * 
+	 * @param packet
+	 * @return contents of a packet
+	 */
+	protected String getFileName(DatagramPacket packet) {
+		return readBytes(2, packet.getData(), packet.getLength());
+	}
+
 	protected int getBlockNum(DatagramPacket packet) {
 		return packet.getData()[2] * 256 + packet.getData()[3];
 	}
-	
 
-	
+	protected int getType(DatagramPacket packet) {
+		return packet.getData()[1];
+	}
+
 	/**
-	 * @author bloo
-	 * Reads bytes from a byte array at the start index into a string
+	 * @author bloo Reads bytes from a byte array at the start index into a string
 	 * 
-	 * @param index - statring index of the data
-	 * @param packet - byte array of packet data
-	 * @param dataLength - the number of bytes of data
+	 * @param index
+	 *            - statring index of the data
+	 * @param packet
+	 *            - byte array of packet data
+	 * @param dataLength
+	 *            - the number of bytes of data
 	 * @return resulting String of data
 	 */
 	protected String readBytes(int offset, byte[] packet, int dataLength) {
@@ -239,12 +253,12 @@ public abstract class UDPConnection {
 		}
 		return data;
 	}
-	
+
 	/**
-	 * @author bloo
-	 * Parses a tftp packet in byte form and returns info
+	 * @author bloo Parses a tftp packet in byte form and returns info
 	 * 
-	 * @param packet - packet to convert
+	 * @param packet
+	 *            - packet to convert
 	 * @return contents of a packet
 	 */
 	protected String packetToString(DatagramPacket packet) {

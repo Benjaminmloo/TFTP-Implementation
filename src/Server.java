@@ -7,7 +7,7 @@ import java.net.SocketException;
  * @author BenjaminP, BenB
  *
  */
-public class Server extends UDPConnection{
+public class Server extends TFTPConnection{
 	/*
 	 * File transferred in 512-byte blocks, 1 block per packet transfer. Block < 512
 	 * bytes terminates transfer Packet types: RRQ, WRQ, DATA, ACK, ERROR

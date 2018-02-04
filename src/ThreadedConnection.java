@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class ThreadedConnection extends UDPConnection implements Runnable{
+public class ThreadedConnection extends TFTPConnection implements Runnable{
 	
 	private DatagramPacket requestPacket;
 	
@@ -37,7 +37,7 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 
 		if (data[0] == 0 && data[data.length - 1] == 0) {
 			byte request = data[1];
-			if (RequestTypes.containsKey(request)) {
+			if (PacketTypes.containsKey(request)) {
 				return request;
 			} else
 				throw new IllegalArgumentException();
@@ -112,7 +112,7 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 				throw new IllegalArgumentException();
 			}
 
-			if (processACK(ackPacket.getData()) != i) {
+			if (getBlockNum(ackPacket) != i) {
 				System.out.println("ACK for a different Block!");
 				throw new IllegalArgumentException();
 			}
@@ -219,17 +219,6 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 			e.printStackTrace();
 			System.exit(1);
 		}
-	}
-
-	/**
-	 * @author bloo
-	 * Parses a tftp packet in byte form and returns info
-	 * 
-	 * @param packet
-	 * @return contents of a packet
-	 */
-	private String getFileName(DatagramPacket packet) {
-		return readBytes(2, packet.getData(), packet.getLength());
 	}
 
 	@Override

@@ -12,7 +12,7 @@ import java.util.Scanner;
  * TFTP Client
  */
 
-public class Client extends UDPConnection {
+public class Client extends TFTPConnection {
 
 	private DatagramPacket sendPacket, receivePacket;
 	private DatagramSocket sendReceiveSocket;
@@ -27,6 +27,7 @@ public class Client extends UDPConnection {
 	private String localFileName;
 	private String serverFileName;
 	private ArrayList<byte[]> splitFile, tempFileToSave;
+	private int sendPort;
 
 	int blockNum = 0;
 	int blocks;
@@ -74,7 +75,7 @@ public class Client extends UDPConnection {
 			byte msg[] = outputStream.toByteArray();
 	
 			try {
-				send(msg, connectionSocket, InetAddress.getLocalHost(), 69);
+				send(msg, connectionSocket, InetAddress.getLocalHost(), sendPort);
 				blockNum = 1;
 				handleRequest(connectionSocket);
 	
@@ -300,7 +301,7 @@ public class Client extends UDPConnection {
 			out.write(tempFileToSave.get(i));
 		}
 		out.close();
-		blocks = splitFile.size();
+		blocks = tempFileToSave.size();
 	}
 	
 
@@ -323,6 +324,21 @@ public class Client extends UDPConnection {
 				System.out.print("Verbose mode (true/false): ");
 				verbose = n.nextBoolean();
 				
+				break;
+			} catch (InputMismatchException e) {
+				System.out.println("Invalid input!");
+			}
+		}
+		
+		while (true) { // get transfer mode
+			try {
+				System.out.print("Test mode (true/false): ");
+				if(n.nextBoolean()){
+					sendPort = 23;
+				}else {
+					sendPort = 69;
+				}
+				System.out.println("Port to send request: " + sendPort);
 				break;
 			} catch (InputMismatchException e) {
 				System.out.println("Invalid input!");
