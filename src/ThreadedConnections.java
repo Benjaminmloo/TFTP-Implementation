@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ThreadedConnections {
+public class ThreadedConnections extends UDPConnection{
 	
 	public ThreadedConnections(DatagramPacket p)
 	{
@@ -91,12 +91,19 @@ public class ThreadedConnections {
 	 */
 	private void readRequestHandler(DatagramPacket packet) throws IllegalArgumentException {
 		List<byte[]> data = this.parseRRQ(this.getFileName(packet));
-
+		DatagramSocket rrqSocket = null;
+		try {
+			rrqSocket = new DatagramSocket();
+		} catch (SocketException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		
 		for (int i = 0; i < data.size(); i++) {
 			byte sendData[] = data.get(i);
 			this.send(sendData, packet.getSocketAddress());
 
-			DatagramPacket ackPacket = this.receive();
+			DatagramPacket ackPacket = this.receive(rrqSocket);;
 			if (this.getRequest(ackPacket) != (byte) 4) {
 				System.out.println("Not an ACK packet!");
 				throw new IllegalArgumentException();
