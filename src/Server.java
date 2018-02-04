@@ -19,7 +19,7 @@ import java.util.Map;
  * @author BenjaminP, BenB
  *
  */
-public class Server {
+public class Server extends UDPConnection{
 	/*
 	 * File transferred in 512-byte blocks, 1 block per packet transfer. Block < 512
 	 * bytes terminates transfer Packet types: RRQ, WRQ, DATA, ACK, ERROR
@@ -68,17 +68,7 @@ public class Server {
 		this(serverPort, true);
 	}
 
-	/**
-	 * Default receive method
-	 * 
-	 * receives a packet over the servers socket
-	 * 
-	 * @return
-	 */
-	DatagramPacket receive() {
-		return receive(requestSocket);
-	}
-
+	
 	private class ClientConnection extends Thread {
 		SocketAddress returnAddress;
 
@@ -94,90 +84,6 @@ public class Server {
 		}
 	}
 
-	/**
-	 * Base receive method
-	 * 
-	 * Receives a DatagramPacket over the given socket
-	 * 
-	 * @param socket
-	 * @return receivePacket unless there is an exception trying to receive
-	 */
-	DatagramPacket receive(DatagramSocket socket, int length) {
-		byte[] msg;
-		receivePacket = new DatagramPacket(new byte[length], length);
-
-		try {
-			socket.receive(receivePacket);
-			msg = receivePacket.getData();
-
-			System.out.println("Server Received:");
-			System.out.println(new String(msg));
-			System.out.println(Arrays.toString(msg) + "\n");
-
-			return receivePacket;
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-		return new DatagramPacket(new byte[0], 0);
-	}
-
-	/**
-	 * Base receive method
-	 * 
-	 * Receives a DatagramPacket over the given socket
-	 * 
-	 * @param socket
-	 * @return receivePacket unless there is an exception trying to receive
-	 */
-	DatagramPacket receive(DatagramSocket socket) {
-		return receive(socket, 516);
-	}
-
-	/**
-	 * Base Send method
-	 * 
-	 * Sends byte[] msg to the returnAddress
-	 * 
-	 * @param msg
-	 * @param returnAddress
-	 */
-	void send(byte[] msg, SocketAddress returnAddress) {
-		DatagramSocket socket;
-		try {
-			socket = new DatagramSocket();
-
-			sendPacket = new DatagramPacket(msg, msg.length, returnAddress);
-
-			System.out.println("Server Sending:");
-			System.out.println(new String(sendPacket.getData()));
-			System.out.println(Arrays.toString(sendPacket.getData()) + "\n");
-
-			socket.send(sendPacket);
-			socket.close();
-
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-	}
-
-	void send(byte[] msg, DatagramSocket sendSocket, SocketAddress returnAddress) {
-		try {
-
-			sendPacket = new DatagramPacket(msg, msg.length, returnAddress);
-
-			System.out.println("Server Sending:");
-			System.out.println(new String(sendPacket.getData()));
-			System.out.println(Arrays.toString(sendPacket.getData()) + "\n");
-
-			sendSocket.send(sendPacket);
-
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-	}
 
 	/**
 	 * methods the manages packet being received
@@ -188,20 +94,6 @@ public class Server {
 	 *            flag to determine whether or not to use threads to wait for
 	 *            request
 	 */
-	void waitForRequest(boolean threaded) {
-		if (threaded) {
-			new RequestReceiver(serverReceiveSocket).start();
-		} else {
-			while (true) {
-				try {
-					
-				} catch (IllegalArgumentException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}
-			}
-		}
-	}
 	
 	void waitForRequest() {
 		DatagramPacket receivedPacket;
@@ -287,12 +179,19 @@ public class Server {
 	 */
 	private void readRequestHandler(DatagramPacket packet) throws IllegalArgumentException {
 		List<byte[]> data = this.parseRRQ(this.getFileName(packet));
-
+		DatagramSocket rrqSocket = null;
+		try {
+			rrqSocket = new DatagramSocket();
+		} catch (SocketException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		
 		for (int i = 0; i < data.size(); i++) {
 			byte sendData[] = data.get(i);
-			this.send(sendData, packet.getSocketAddress());
+			this.send(sendData, rrqSocket, packet.getSocketAddress());
 
-			DatagramPacket ackPacket = this.receive();
+			DatagramPacket ackPacket = this.receive(rrqSocket);
 			if (this.getRequest(ackPacket) != (byte) 4) {
 				System.out.println("Not an ACK packet!");
 				throw new IllegalArgumentException();
