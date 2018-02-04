@@ -71,7 +71,7 @@ public class Client {
 
 		byte msg[] = outputStream.toByteArray();
 
-		sendAPacket(msg);
+		sendAPacket(msg,23);
 	}
 	
 	/**
@@ -119,7 +119,7 @@ public class Client {
 			if (transferType == OP_WRQ) { // send DATA to server 1 block at a time.
 
 				if (blockNum < blocks) { 
-					sendDATA(splitFile.get(blockNum).getBytes(), blockNum);
+					sendDATA(splitFile.get(blockNum).getBytes(), blockNum, receivePacket.getPort());
 					blockNum++;
 					receive();
 				}
@@ -136,7 +136,7 @@ public class Client {
 
 				tempFileToSave.add(tempData.toString());
 
-				sendACK();
+				sendACK(receivePacket.getPort());
 
 				// if message is less then 512 bytes, transfer is over. else ask for following
 				// block of data
@@ -165,7 +165,7 @@ public class Client {
 	/**
 	 * Sends ACK packet to server
 	 */
-	public void sendACK() {
+	public void sendACK(int port) {
 
 		byte opCode = OP_ACK;
 		byte blockNum = 0;
@@ -177,7 +177,7 @@ public class Client {
 
 		byte msg[] = outputStream.toByteArray();
 
-		sendAPacket(msg);
+		sendAPacket(msg,port);
 	}
 
 	/**
@@ -187,7 +187,7 @@ public class Client {
 	 * @param  blockNum - current block# of file transfer
 	 * 
 	 */
-	public void sendDATA(byte[] data, int blockNum) {
+	public void sendDATA(byte[] data, int blockNum, int port) {
 
 		byte opCode = OP_DATA;
 		byte blockN = (byte) blockNum;
@@ -206,7 +206,7 @@ public class Client {
 
 		byte msg[] = outputStream.toByteArray();
 
-		sendAPacket(msg);
+		sendAPacket(msg,port);
 
 	}
 
@@ -216,10 +216,10 @@ public class Client {
 	 * @param  msg - data to be sent via packet to server
 	 * 
 	 */
-	public void sendAPacket(byte[] msg) {
+	public void sendAPacket(byte[] msg, int port) {
 
 		try {
-			sendPacket = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), 23);
+			sendPacket = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), port);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 			System.exit(1);
