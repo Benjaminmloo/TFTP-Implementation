@@ -25,7 +25,7 @@ public class Server {
 	 * bytes terminates transfer Packet types: RRQ, WRQ, DATA, ACK, ERROR
 	 * TID(transfer ID) Client gets random TID when a request is prepared, when a
 	 * server grants a request it also gets a random TID Source and destination TID
-	 * associated with every packet but not stored in the packet, used as
+	 * associated with every packet but not stored in the packet, used asDel
 	 * source/destination ports for UDP Write: Client WRQ -> Server ACK Block 0 ->
 	 * Client Data Block 1 -> Server ACK Block 1 -> Client Data Block 2 -> etc...
 	 * Server ACK Block n Read: Client RRQ -> Server Data Block 1 -> Client ACK
@@ -48,9 +48,6 @@ public class Server {
 		RequestTypes.put((byte) 4, "ACK");
 		RequestTypes.put((byte) 5, "ERROR");
 	}
-
-	private final byte[] readResponce = { 0, 3, 0, 1 };
-	private final byte[] writeResponce = { 0, 4, 0, 0 };
 
 	/**
 	 * Constructor for a Server
@@ -216,51 +213,12 @@ public class Server {
 		} else {
 			while (true) {
 				try {
-					processPacket(receive());
+					
 				} catch (IllegalArgumentException e) {
 					e.printStackTrace();
 					System.exit(1);
 				}
 			}
-		}
-	}
-
-	/**
-	 * Process a received packet and send a response if necessary
-	 * 
-	 * @param receivedPacket
-	 * @throws IllegalArgumentException
-	 */
-	void processPacket(DatagramPacket receivedPacket) throws IllegalArgumentException {
-		int numZeroes;
-		byte[] msg = receivedPacket.getData();
-
-		msg = Arrays.copyOf(msg, receivedPacket.getLength()); // extract data
-
-		// Verify validity of the data
-
-		if (msg[0] == 0 & msg[msg.length - 1] == 0) { // check the static zeroes bytes at start and end of the array
-
-			numZeroes = 0;
-			for (int i = 2; i < msg.length - 1; i++) { // look for a zero in between to strings
-				if (msg[i] == 0) {
-					numZeroes++;
-				}
-			}
-			if (numZeroes == 1) { // if one zero is found
-				if (msg[1] == 1) { // send either read or write response
-					send(readResponce, receivedPacket.getSocketAddress());
-				} else if (msg[1] == 2) {
-					send(writeResponce, receivedPacket.getSocketAddress());
-				} else {
-					throw new IllegalArgumentException(); // If there is any invalidity with the data send
-															// IllegalArgumentException
-				}
-			} else {
-				throw new IllegalArgumentException();
-			}
-		} else {
-			throw new IllegalArgumentException();
 		}
 	}
 
