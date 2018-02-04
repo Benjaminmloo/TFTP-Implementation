@@ -144,7 +144,7 @@ public class ThreadedConnection extends TFTPConnection implements Runnable{
 
 			String line = null;
 			while ((line = bufferedReader.readLine()) != null) {
-				data = data.concat(" " + line);
+				data = data.concat(line + "\n");
 			}
 
 			bufferedReader.close();
@@ -163,9 +163,11 @@ public class ThreadedConnection extends TFTPConnection implements Runnable{
 			byte temp[] = null;
 			if (i + 512 <= byteData.length) {
 				temp = Arrays.copyOfRange(byteData, i, i + 512);
+				System.out.println(temp.length + ", " + new String(temp));
 				outList.add(temp);
 			} else {
 				temp = Arrays.copyOfRange(byteData, i, byteData.length);
+				System.out.println(temp.length + ", " + new String(temp));
 				outList.add(temp);
 			}
 		}

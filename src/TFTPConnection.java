@@ -180,8 +180,6 @@ public abstract class TFTPConnection {
 	 */
 	protected byte[] createAck(int blockNum) {
 		byte[] ack = new byte[] { 0, 4, (byte) (blockNum / 256), (byte) (blockNum % 256) };
-		if (verbose)
-			System.out.println("new ack: " + new String(ack));
 		return ack;
 	}
 
@@ -252,6 +250,10 @@ public abstract class TFTPConnection {
 			data += (char) packet[index++];
 		}
 		return data;
+	}
+	
+	protected int getDataLength(DatagramPacket packet) {
+		return readBytes(4, packet.getData(), packet.getLength()).length();
 	}
 
 	/**

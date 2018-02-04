@@ -5,7 +5,6 @@ import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 
 /**
  * @author Benjamin Loo
@@ -30,7 +29,6 @@ public class ErrorSimulator extends TFTPConnection {
 		try {
 			eSimSocket = new DatagramSocket(this.eSimPort);
 			mediatorSocket = new DatagramSocket();
-			startPassthrough();
 
 		} catch (SocketException e) {
 			eSimSocket.close();
@@ -75,19 +73,19 @@ public class ErrorSimulator extends TFTPConnection {
 	}
 
 	void meddiateConnection() {
-		DatagramPacket clientPacket, serverPacket;
+		DatagramPacket clientPacket, serverPacket = new DatagramPacket(createAck(0), 4);
 		while (true) {
 			clientPacket = receive(mediatorSocket); // wait to receive packet from client
 			clientAddress = clientPacket.getSocketAddress();
 			send(clientPacket.getData(), mediatorSocket, serverAddress);
 			
-			if (getType(clientPacket) == 3 && clientPacket.getLength() < 516)break;
+			if(getType(serverPacket) == 3 && getDataLength(serverPacket) < 512)break;
 			
 			serverPacket = receive(mediatorSocket);
 			serverAddress = serverPacket.getSocketAddress();
 			send(serverPacket.getData(), mediatorSocket, clientAddress);
-			
-			if(getType(serverPacket) == 3 && serverPacket.getLength() < 516)break;
+
+			if (getType(clientPacket) == 3 && getDataLength(clientPacket) < 512)break;
 		}
 	}
 
@@ -98,6 +96,7 @@ public class ErrorSimulator extends TFTPConnection {
 	 */
 	public static void main(String[] args) {
 		ErrorSimulator h = new ErrorSimulator(23, 69, true);
+		h.startPassthrough();
 	}
 
 }
