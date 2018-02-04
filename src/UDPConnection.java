@@ -3,6 +3,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -166,6 +167,59 @@ public abstract class UDPConnection {
 		}
 		return new DatagramPacket(new byte[0], 0);
 	}
+	
+	/**
+	 * @author BenjaminP
+	 * 
+	 * @param data
+	 * @return
+	 */
+	protected int processACK(byte[] data) {
+		return ((data[2] * 10) + data[3]);
+	}
+	
+	/**
+	 * creates acknowledge packet based on given block number
+	 * 
+	 * @param blockNum - the current number the packet is acknowledging
+	 * @return byte array with acknowledge data
+	 * @author bloo
+	 */
+	protected byte[] createAck(int blockNum) {
+		byte[] ack = new byte[] { 0, 4, (byte) (blockNum / 256), (byte) (blockNum % 256) };
+		if(verbose)System.out.println("new ack: " + new String(ack));
+		return ack;
+	}
+	
+	
+	/**
+	 * Retreive the data in a packet in the form of a string
+	 * 
+	 * @param packet - the packet the data will be extracted from
+	 * @return the data in the form of a string
+	 * @author BLoo
+	 */
+	protected String getData(DatagramPacket packet) {
+		String data  = readBytes(4, packet.getData(), packet.getLength());
+		if(verbose)System.out.println("new data: " + new String(data));
+		return data;
+	}
+	
+	/**
+	 * Creates Data packet 
+	 * @param blockNum - the block num of the blcok being sent
+	 * @param data - the data being sent 
+	 * @return packet in the form of a byte array
+	 * @author BLoo
+	 */
+	protected byte[] createData(int blockNum, byte[] data) {
+		byte[] packet = new byte[4 + data.length];
+		ByteBuffer dBuff = ByteBuffer.wrap(packet);
+		dBuff.put(new byte[] { 0, 3, (byte) (blockNum / 256), (byte) (blockNum % 256)});
+		dBuff.put(data);
+		return packet;
+	}
+	
 
 	
 	/**
@@ -224,7 +278,7 @@ public abstract class UDPConnection {
 					index += msg.length() + 1;
 				} else if (data[1] == 3) {
 					descriptor += "DATA\nBlock #: ";
-					blockNum = data[2] * 256 + data[1]; // convert 2 byte number to decimal
+					blockNum = data[2] * 256 + data[3]; // convert 2 byte number to decimal
 					descriptor += blockNum + "\nBytes of data: " + readBytes(4, data, packet.getLength()).length()
 							+ "\n"; // add block number to
 					// descriptor as
@@ -232,8 +286,6 @@ public abstract class UDPConnection {
 					// number of bytes
 					// in data
 				} else if (data[1] == 4) {
-
-					if(verbose)System.out.println("converting ack");
 					descriptor += "ACK\nBlock #: ";
 					blockNum = data[2] * 256 + data[3];
 					descriptor += blockNum + "\n";

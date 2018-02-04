@@ -23,12 +23,11 @@ public class Client extends UDPConnection {
 	private static final byte OP_DATA = 3;
 	private static final byte OP_ACK = 4;
 
-	private static boolean verbose = true;
 	private static byte transferType;
 	private String localFileName;
 	private String serverFileName;
 	private byte[] tempFile;
-	private ArrayList<String> splitFile, tempFileToSave;
+	private ArrayList<byte[]> splitFile, tempFileToSave;
 
 	int blockNum = 0;
 	int blocks;
@@ -38,7 +37,7 @@ public class Client extends UDPConnection {
 	private static final byte[] MODE = mode.getBytes();
 
 	public Client() {
-
+		this.verbose = true;
 		// Create datagram socket to send and receive packets
 		try {
 			sendReceiveSocket = new DatagramSocket();
@@ -76,7 +75,8 @@ public class Client extends UDPConnection {
 			byte msg[] = outputStream.toByteArray();
 	
 			try {
-				send(msg, connectionSocket, InetAddress.getLocalHost(), 23);
+				send(msg, connectionSocket, InetAddress.getLocalHost(), 69);
+				blockNum = 1;
 				handleRequest(connectionSocket);
 	
 			} catch (UnknownHostException e) {
@@ -90,11 +90,13 @@ public class Client extends UDPConnection {
 		}
 
 	}
+	
+	
 
 	private void handleRequest(DatagramSocket connectionSocket) {
 		DatagramPacket newPacket;
 		byte[] data;
-
+		System.out.println("Num Blocks: " + blocks);
 		while(true) {
 			newPacket = receive(connectionSocket);
 			data = newPacket.getData();
@@ -104,23 +106,20 @@ public class Client extends UDPConnection {
 			{
 				// connection established begin transfer
 				if (transferType == OP_WRQ) { // send DATA to server 1 block at a time.
-	
-					if(blockNum < blocks) { 
-						sendDATA(splitFile.get(blockNum).getBytes(), blockNum, receivePacket.getPort()); //TODO use UPDConnection.send() and write method to compile data packet
+					if(blockNum <= blocks) { 
+						send(createData(blockNum, splitFile.get(blockNum - 1)), connectionSocket, newPacket.getSocketAddress()); //TODO use UPDConnection.send() and write method to compile data packet
 						blockNum++;
+					}else {
+						closeConnection();
 					}
 	
-					// file transfer done, close the connection
-					closeConnection();
-	
-				}
-				if (transferType == OP_RRQ) { // store received data and send ACK to server.
+				}else if (transferType == OP_RRQ) { // store received data and send ACK to server.
 					// for now assume no packets or lost or duplicated, just process data.
 	
 					byte[] tempData = Arrays.copyOfRange(data, 3, data.length);
 					System.out.println(new String(tempData, 0, tempData.length));
 	
-					tempFileToSave.add(tempData.toString());
+					tempFileToSave.add(tempData);
 	
 					sendACK(receivePacket.getPort());
 	
@@ -293,17 +292,29 @@ public class Client extends UDPConnection {
 	 */
 	public void splitFileToSend(String fileName) throws IOException {
 		byte[] buffer = new byte[512];
-
-		splitFile = new ArrayList<String>();
+		byte[]data;
+		String s;
+		splitFile = new ArrayList<byte[]>();
 		FileInputStream in = new FileInputStream(fileName);
 		int rc = in.read(buffer);
 		while (rc != -1) {
-			splitFile.add(buffer.toString());
-
+			data = Arrays.copyOf(buffer, rc);
+			splitFile.add(data);
 			rc = in.read(buffer);
+			//if(verbose)System.out.println("New block: " + new String(buffer));
 		}
 
+		//if(verbose)System.out.println(spiltFileToString(splitFile));
 		blocks = splitFile.size();
+	}
+	
+	public String spiltFileToString(ArrayList<byte[]> data) {
+		String out ="{";
+		for(byte[] d:data) {
+			out += new String(d) +",\n ";
+		}
+		out += "}";
+		return out;
 	}
 
 	/**
@@ -315,7 +326,7 @@ public class Client extends UDPConnection {
 		FileOutputStream out = new FileOutputStream("src/test.txt");
 
 		for (int i = 0; i < tempFileToSave.size(); i++) {
-			out.write(tempFileToSave.get(i).getBytes());
+			out.write(tempFileToSave.get(i));
 		}
 
 		blocks = splitFile.size();
@@ -349,7 +360,7 @@ public class Client extends UDPConnection {
 
 			try {
 				Scanner n = new Scanner(System.in);
-				System.out.print("WRQ(1) or RRQ(2): ");
+				System.out.print("RRQ(1) or WRQ(2): ");
 				transferType = n.nextByte();
 				if (transferType == 1 || transferType == 2) {
 					break;

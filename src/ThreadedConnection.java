@@ -174,16 +174,6 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 	}
 	
 	/**
-	 * @author BenjaminP
-	 * 
-	 * @param data
-	 * @return
-	 */
-	private int processACK(byte[] data) {
-		return ((data[2] * 10) + data[3]);
-	}
-	
-	/**
 	 * @author bloo
 	 * handles write requests
 	 * receives data to be written from client and write it too a file
@@ -192,21 +182,18 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 	private void writeRequestHandler(DatagramPacket packet) {
 		int blockNum = 0;
 
-		if(verbose)System.out.println("saving return addresss");
 		SocketAddress returnAddress = packet.getSocketAddress();
 		DatagramSocket wrqSocket = null;
 		DatagramPacket newPacket;
 		OutputStream file = null;
 		try {
-			if(verbose)System.out.println("opening file");
 			file = new FileOutputStream(getFileName(packet));
-			if(verbose)System.out.println("opening socket");
 			wrqSocket = new DatagramSocket();
-			if(verbose)System.out.println("sending init ack");
 			send(createAck(blockNum), wrqSocket, returnAddress);
 			do {
 				newPacket = receive(wrqSocket, 516);
-				file.write(newPacket.getData(), 4, newPacket.getLength()); // write the data section of the packet to
+				//System.out.println(newPacket.getLength());
+				file.write(newPacket.getData(), 4, newPacket.getLength() - 4); // write the data section of the packet to
 																			// the file
 				send(createAck(++blockNum), wrqSocket, returnAddress); // send ack to the client
 			} while (newPacket.getLength() == 516); // continue while the packets are full
@@ -233,20 +220,6 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 			System.exit(1);
 		}
 	}
-
-	/**
-	 * creates acknowledge packet based on given block number
-	 * 
-	 * @param blockNum - the current number the packet is acknowledging
-	 * @return byte array with acknowledge data
-	 * @author bloo
-	 */
-	private byte[] createAck(int blockNum) {
-		byte[] ack = new byte[] { 0, 4, (byte) (blockNum / 256), (byte) (blockNum % 256) };
-		if(verbose)System.out.println("new ack: " + new String(ack));
-		return ack;
-	}
-
 
 	/**
 	 * @author bloo
