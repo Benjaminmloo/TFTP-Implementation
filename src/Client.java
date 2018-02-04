@@ -18,14 +18,15 @@ public class Client extends UDPConnection {
 	private DatagramSocket sendReceiveSocket;
 
 	// OPCODES for TFTP transfer
-	private static final byte OP_WRQ = 1;
-	private static final byte OP_RRQ = 2;
+	private static final byte OP_WRQ = 2;
+	private static final byte OP_RRQ = 1;
 	private static final byte OP_DATA = 3;
 	private static final byte OP_ACK = 4;
 
 	private static boolean verbose = true;
 	private static byte transferType;
-	private static String fileName;
+	private String localFileName;
+	private String serverFileName;
 	private byte[] tempFile;
 	private ArrayList<String> splitFile, tempFileToSave;
 
@@ -57,7 +58,7 @@ public class Client extends UDPConnection {
 			connectionSocket = new DatagramSocket();
 			// create message for DatagramPacket
 			byte opCode = transferType; // WRQ or RRQ
-			byte file[] = fileName.getBytes();
+			byte file[] = serverFileName.getBytes();
 	
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			try {
@@ -105,7 +106,7 @@ public class Client extends UDPConnection {
 				if (transferType == OP_WRQ) { // send DATA to server 1 block at a time.
 	
 					if(blockNum < blocks) { 
-						sendDATA(splitFile.get(blockNum).getBytes(), blockNum, receivePacket.getPort());
+						sendDATA(splitFile.get(blockNum).getBytes(), blockNum, receivePacket.getPort()); //TODO use UPDConnection.send() and write method to compile data packet
 						blockNum++;
 					}
 	
@@ -319,6 +320,11 @@ public class Client extends UDPConnection {
 
 		blocks = splitFile.size();
 	}
+	
+
+	private String getLocalFileName() {
+		return localFileName;
+	}
 
 	/**
 	 * Basic UI, gets input from user ** WILL be upgraded in future iterations.
@@ -358,10 +364,23 @@ public class Client extends UDPConnection {
 
 		while (true) { // get file name
 
+			
 			try {
 				Scanner n = new Scanner(System.in);
-				System.out.print("Enter File name (don't forget \"\\\\\"): ");
-				fileName = n.next();
+				System.out.print("Enter local File name (don't forget \"\\\\\"): ");
+				localFileName = n.next();
+				break;
+			} catch (InputMismatchException e) {
+				System.out.println("Invalid input!");
+			}
+		}
+		
+		while (true) { // get file name
+
+			try {
+				Scanner n = new Scanner(System.in);
+				System.out.print("Enter server File name (don't forget \"\\\\\"): ");
+				serverFileName = n.next();
 				n.close();
 				break;
 			} catch (InputMismatchException e) {
@@ -378,11 +397,12 @@ public class Client extends UDPConnection {
 		c.getUserInput();
 
 		if (transferType == OP_WRQ) {
-			c.splitFileToSend(fileName);
+			c.splitFileToSend(c.getLocalFileName());
 		}
 
 		// Establish TFTP connection to server
 		c.establishConnection();
 
 	}
+
 }

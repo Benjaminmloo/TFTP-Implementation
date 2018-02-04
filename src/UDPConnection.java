@@ -71,7 +71,7 @@ public abstract class UDPConnection {
 			sendPacket = new DatagramPacket(msg, msg.length, returnAddress);
 
 			if(verbose) {
-				System.out.println("Sending:");
+				System.out.println("Sending: ");
 				System.out.println(packetToString(sendPacket));
 			}
 
@@ -232,12 +232,14 @@ public abstract class UDPConnection {
 					// number of bytes
 					// in data
 				} else if (data[1] == 4) {
+
+					if(verbose)System.out.println("converting ack");
 					descriptor += "ACK\nBlock #: ";
-					blockNum = data[2] * 256 + data[1];
+					blockNum = data[2] * 256 + data[3];
 					descriptor += blockNum + "\n";
 				} else if (data[1] == 5) {
 					descriptor += "ERROR\nError Code";
-					blockNum = data[2] * 256 + data[1];
+					blockNum = data[2] * 256 + data[3];
 					descriptor += blockNum + "ErrMsg: " + readBytes(4, data, packet.getLength()) + "\n";
 				}
 			}

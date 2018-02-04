@@ -18,6 +18,7 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 	
 	public ThreadedConnection(DatagramPacket p)
 	{
+		this.verbose = true;
 		requestPacket = p;
 	}
 	
@@ -57,13 +58,16 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 		/* Read Request */
 		case 1:
 			// Respond with Data block 1 and 0 bytes of data
-			this.readRequestHandler(packet);
+
+			if(verbose)System.out.println("Handleing rrq");
+			readRequestHandler(packet);
 			break;
 
 		/* Write Request */
 		case 2:
 			// Respond with ACK block 0
-			this.writeRequestHandler(packet);
+			if(verbose)System.out.println("Handleing wrq");
+			writeRequestHandler(packet);
 			break;
 
 		/* Data */
@@ -188,13 +192,17 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 	private void writeRequestHandler(DatagramPacket packet) {
 		int blockNum = 0;
 
+		if(verbose)System.out.println("saving return addresss");
 		SocketAddress returnAddress = packet.getSocketAddress();
 		DatagramSocket wrqSocket = null;
 		DatagramPacket newPacket;
 		OutputStream file = null;
 		try {
+			if(verbose)System.out.println("opening file");
 			file = new FileOutputStream(getFileName(packet));
+			if(verbose)System.out.println("opening socket");
 			wrqSocket = new DatagramSocket();
+			if(verbose)System.out.println("sending init ack");
 			send(createAck(blockNum), wrqSocket, returnAddress);
 			do {
 				newPacket = receive(wrqSocket, 516);
@@ -227,14 +235,15 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 	}
 
 	/**
-	 * @author bloo
 	 * creates acknowledge packet based on given block number
 	 * 
 	 * @param blockNum - the current number the packet is acknowledging
 	 * @return byte array with acknowledge data
+	 * @author bloo
 	 */
 	private byte[] createAck(int blockNum) {
 		byte[] ack = new byte[] { 0, 4, (byte) (blockNum / 256), (byte) (blockNum % 256) };
+		if(verbose)System.out.println("new ack: " + new String(ack));
 		return ack;
 	}
 
@@ -252,6 +261,7 @@ public class ThreadedConnection extends UDPConnection implements Runnable{
 
 	@Override
 	public void run() {
+		if(verbose)System.out.println("starting new connection");
 		requestHandler(requestPacket);
 	}
 }
