@@ -387,14 +387,19 @@ public class Client extends TFTPConnection {
 
 	}
 
-	public static void main(String args[]) throws IOException {
+	public static void main(String args[]){
 		Client c = new Client();
 
 		// Get information for file transfer
 		c.getUserInput();
 
 		if (transferType == OP_WRQ) {
-			c.splitFileToSend(c.getLocalFileName());
+			try {
+				c.splitFileToSend(c.getLocalFileName());
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
 		}
 
 		// Establish TFTP connection to server

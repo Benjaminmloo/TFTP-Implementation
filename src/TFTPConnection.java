@@ -225,7 +225,7 @@ public abstract class TFTPConnection {
 	}
 
 	protected int getBlockNum(DatagramPacket packet) {
-		return packet.getData()[2] * 256 + packet.getData()[3];
+		return Byte.toUnsignedInt(packet.getData()[2]) * 256 + Byte.toUnsignedInt(packet.getData()[3]);
 	}
 
 	protected int getType(DatagramPacket packet) {
