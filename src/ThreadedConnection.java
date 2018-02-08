@@ -1,17 +1,9 @@
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 public class ThreadedConnection extends TFTPConnection implements Runnable{
 	
 	private DatagramPacket requestPacket;
@@ -93,30 +85,39 @@ public class ThreadedConnection extends TFTPConnection implements Runnable{
 	 * @param packet
 	 */
 	private void readRequestHandler(DatagramPacket packet) throws IllegalArgumentException {
-		List<byte[]> data = this.parseRRQ(this.getFileName(packet));
-		DatagramSocket rrqSocket = null;
+		ArrayList<byte[]> data;
+		DatagramSocket rrqSocket;
+		
 		try {
-			rrqSocket = new DatagramSocket();
-		} catch (SocketException e) {
-			e.printStackTrace();
+			data = readFile(getFileName(packet));
+			try {
+				rrqSocket = new DatagramSocket();
+				
+				for (int i = 1; i <= data.size(); i++) {
+					byte sendData[] = data.get(i - 1);
+					this.send(createData(i , sendData), rrqSocket,  packet.getSocketAddress());
+
+					DatagramPacket ackPacket = receive(rrqSocket);
+					if (this.getType(ackPacket) != 4) {
+						System.out.println("Not an ACK packet!");
+						throw new IllegalArgumentException();
+					}
+
+					if (getBlockNum(ackPacket) != i) {
+						System.out.println("ACK for a different Block!");
+						throw new IllegalArgumentException();
+					}
+				}
+				rrqSocket.close();
+			} catch (SocketException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+		} catch (IOException e1) {
+			e1.printStackTrace();
 			System.exit(1);
 		}
 		
-		for (int i = 1; i <= data.size(); i++) {
-			byte sendData[] = data.get(i - 1);
-			this.send(createData(i , sendData), rrqSocket,  packet.getSocketAddress());
-
-			DatagramPacket ackPacket = receive(rrqSocket);
-			if (this.getRequest(ackPacket) != (byte) 4) {
-				System.out.println("Not an ACK packet!");
-				throw new IllegalArgumentException();
-			}
-
-			if (getBlockNum(ackPacket) != i) {
-				System.out.println("ACK for a different Block!");
-				throw new IllegalArgumentException();
-			}
-		}
 		/*
 		 * List of byte arrays of max size 512 = Call parser here
 		 * 
@@ -129,98 +130,41 @@ public class ThreadedConnection extends TFTPConnection implements Runnable{
 	}
 	
 	/**
-	 * @author BenjaminP
-	 * Parses given file to be sent through data packets
-	 * 
-	 * @param file
-	 * @return
-	 */
-	private List<byte[]> parseRRQ(String file) {
-		String data = "";
-		try {
-			FileReader fileReader = new FileReader(file);
-
-			BufferedReader bufferedReader = new BufferedReader(fileReader);
-
-			String line = null;
-			while ((line = bufferedReader.readLine()) != null) {
-				data = data.concat(line + "\n");
-			}
-
-			bufferedReader.close();
-
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			System.exit(1);
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-
-		List<byte[]> outList = new ArrayList<byte[]>();
-		byte byteData[] = data.getBytes();
-		for (int i = 0; i < byteData.length; i += 512) {
-			byte temp[] = null;
-			if (i + 512 <= byteData.length) {
-				temp = Arrays.copyOfRange(byteData, i, i + 512);
-				System.out.println(temp.length + ", " + new String(temp));
-				outList.add(temp);
-			} else {
-				temp = Arrays.copyOfRange(byteData, i, byteData.length);
-				System.out.println(temp.length + ", " + new String(temp));
-				outList.add(temp);
-			}
-		}
-
-		return outList;
-	}
-	
-	/**
-	 * @author bloo
-	 * handles write requests
+	 * handles tftp write requests
 	 * receives data to be written from client and write it too a file
 	 * @param packet
+	 * @author bloo
 	 */
 	private void writeRequestHandler(DatagramPacket packet) {
-		int blockNum = 0;
-
+		ArrayList<byte[]> file = new ArrayList<byte[]>();
 		SocketAddress returnAddress = packet.getSocketAddress();
 		DatagramSocket wrqSocket = null;
 		DatagramPacket newPacket;
-		OutputStream file = null;
+		int blockNum = 0;
 		try {
-			file = new FileOutputStream(getFileName(packet));
 			wrqSocket = new DatagramSocket();
 			send(createAck(blockNum), wrqSocket, returnAddress);
+			
 			do {
-				newPacket = receive(wrqSocket, 516);
-				//System.out.println(newPacket.getLength());
-				file.write(newPacket.getData(), 4, newPacket.getLength() - 4); // write the data section of the packet to
-																			// the file
-				send(createAck(++blockNum), wrqSocket, returnAddress); // send ack to the client
-			} while (newPacket.getLength() == 516); // continue while the packets are full
-			file.close(); // close the file when done
-		} catch (FileNotFoundException e) { //catch any exceptions closing any necessary connections
-			e.printStackTrace();
-			System.exit(1);
-		} catch (SocketException e) {
-			if (wrqSocket != null) {
-				wrqSocket.close();
-			}
-			try {
-				file.close();
-			} catch (IOException x) {
-				x.printStackTrace();
-			}
-			e.printStackTrace();
-			System.exit(1);
-		} catch (IOException e) {
-			if (wrqSocket != null) {
-				wrqSocket.close();
-			}
-			e.printStackTrace();
-			System.exit(1);
+				newPacket = receive(wrqSocket);
+				file.add(getByteData(newPacket)); // write the data section of the packet to
+				// the file
+				blockNum++;
+				send(createAck(getBlockNum(newPacket)), wrqSocket, returnAddress); // send ack to the client
+			} while (newPacket.getLength() == STD_DATA_SIZE); // continue while the packets are full
+			wrqSocket.close();
+		} catch (SocketException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
+
+
+		try {
+			saveFile(file, getFileName(packet));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}	
 	}
 
 	@Override

@@ -1,9 +1,16 @@
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,6 +20,8 @@ import java.util.Map;
  */
 public abstract class TFTPConnection {
 	protected boolean verbose;
+
+	public static int STD_DATA_SIZE = 516;
 
 	protected static Map<Byte, String> PacketTypes;
 	static {
@@ -26,12 +35,14 @@ public abstract class TFTPConnection {
 	}
 
 	/**
-	 * @author bloo Base Send method
+	 * Base Send method
 	 * 
-	 *         Sends byte[] msg to the returnAddress
+	 * Sends byte[] msg to the returnAddress
 	 * 
 	 * @param msg
 	 * @param returnAddress
+	 * 
+	 * @author bloo
 	 */
 	protected void send(byte[] msg, SocketAddress returnAddress) {
 		DatagramSocket socket;
@@ -56,7 +67,7 @@ public abstract class TFTPConnection {
 	}
 
 	/**
-	 * @author bloo Sends msg to return address over the given socket
+	 * Sends msg to return address over the given socket
 	 * 
 	 * @param msg
 	 *            - byte array to be sent
@@ -64,6 +75,8 @@ public abstract class TFTPConnection {
 	 *            - socket that will be used to send packet
 	 * @param returnAddress
 	 *            - address the packet will be send too
+	 * 
+	 * @author bloo
 	 */
 	protected void send(byte[] msg, DatagramSocket sendSocket, SocketAddress returnAddress) {
 		DatagramPacket sendPacket;
@@ -85,7 +98,7 @@ public abstract class TFTPConnection {
 	}
 
 	/**
-	 * @author bloo creates a packet to be sent by base send() method
+	 * creates a packet to be sent by base send() method
 	 * 
 	 * @param msg
 	 *            - byte array to be sent
@@ -95,6 +108,8 @@ public abstract class TFTPConnection {
 	 *            - address the packet will be send too
 	 * @param port
 	 *            - port the packet will be send too
+	 * 
+	 * @author bloo
 	 */
 	protected void send(byte[] msg, DatagramSocket socket, InetAddress address, int port) {
 		DatagramPacket sendPacket = new DatagramPacket(msg, msg.length, address, port);
@@ -102,12 +117,14 @@ public abstract class TFTPConnection {
 	}
 
 	/**
-	 * @author bloo Base send method, used to send sendPacket over given socket
+	 * Base send method, used to send sendPacket over given socket
 	 * 
 	 * @param socket
 	 *            - socket the packet will sent too
 	 * @param sendPacket
 	 *            - packet to be sent
+	 * 
+	 * @author bloo
 	 */
 	protected void send(DatagramSocket socket, DatagramPacket sendPacket) {
 		try {
@@ -127,28 +144,30 @@ public abstract class TFTPConnection {
 	}
 
 	/**
-	 * @author bloo Base receive method
+	 * Base receive method
 	 * 
-	 *         Receives a DatagramPacket over the given socket
+	 * Receives a DatagramPacket over the given socket
 	 * 
 	 * @param socket
 	 *            - socket packet will be received at
 	 * @return receivedPacket unless there is an exception trying to receive
+	 * 
+	 * @author bloo
 	 */
 	DatagramPacket receive(DatagramSocket socket) {
 		return receive(socket, 516);
 	}
 
 	/**
-	 * @author bloo Base receive method
-	 * 
-	 *         Receives a DatagramPacket over the given socket
+	 * Base receive method Receives a DatagramPacket over the given socket
 	 * 
 	 * @param socket
 	 *            - socket to receive from
 	 * @param length
 	 *            - size of potential packet
 	 * @return receivePacket unless there is an exception trying to receive
+	 * 
+	 * @author bloo
 	 */
 	DatagramPacket receive(DatagramSocket socket, int length) {
 		DatagramPacket receivedPacket;
@@ -192,8 +211,12 @@ public abstract class TFTPConnection {
 	 * @author BLoo
 	 */
 	protected String getData(DatagramPacket packet) {
-		String data = readBytes(4, packet.getData(), packet.getLength());
+		String data = bytesToString(readToStop(4, packet.getData(), packet.getLength()));
 		return data;
+	}
+
+	protected byte[] getByteData(DatagramPacket packet) {
+		return readToStop(4, packet.getData(), packet.getLength());
 	}
 
 	/**
@@ -215,13 +238,29 @@ public abstract class TFTPConnection {
 	}
 
 	/**
-	 * @author bloo Parses a tftp packet in byte form and returns info
+	 * Parses a tftp packet in byte form and returns info
 	 * 
 	 * @param packet
 	 * @return contents of a packet
+	 * 
+	 * @author bloo
 	 */
 	protected String getFileName(DatagramPacket packet) {
-		return readBytes(2, packet.getData(), packet.getLength());
+		return bytesToString(readToStop(2, packet.getData(), packet.getLength()));
+	}
+
+	protected String getMode(DatagramPacket packet) {
+		int offset = readToStop(2, packet.getData(), packet.getLength()).length + 3; // Find offset of mode field by
+																						// reading the first field and
+																						// adding that fields length,
+																						// accounting for the
+																						// terminating zero and initial
+																						// offset, to the offset
+		return bytesToString(readToStop(offset, packet.getData(), packet.getLength()));
+	}
+
+	protected String getError(DatagramPacket packet) {
+		return bytesToString(readToStop(4, packet.getData(), packet.getLength()));
 	}
 
 	protected int getBlockNum(DatagramPacket packet) {
@@ -233,82 +272,114 @@ public abstract class TFTPConnection {
 	}
 
 	/**
-	 * @author bloo Reads bytes from a byte array at the start index into a string
+	 * Reads bytes from a byte array to terminating zero or to the end of the
+	 * available data.
 	 * 
 	 * @param index
-	 *            - statring index of the data
+	 *            - Starting index of the data
 	 * @param packet
 	 *            - byte array of packet data
 	 * @param dataLength
 	 *            - the number of bytes of data
 	 * @return resulting String of data
+	 * 
+	 * @author bloo
 	 */
-	protected String readBytes(int offset, byte[] packet, int dataLength) {
-		String data = "";
-		int index = offset;
-		while (index < dataLength && packet[index] != 0) {
-			data += (char) packet[index++];
+	protected byte[] readToStop(int offset, byte[] packet, int dataLength) {
+		byte[] data = new byte[512];
+		int index;
+		for (index = offset; index < dataLength && packet[index] != 0; index++) {
+			data[index - offset] = packet[index];
 		}
-		return data;
+		return Arrays.copyOfRange(data, 0, index - offset);
 	}
-	
+
+	protected String bytesToString(byte[] data) {
+		try {
+			return new String(data, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+			return new String(data);
+		}
+	}
+
 	protected int getDataLength(DatagramPacket packet) {
-		return readBytes(4, packet.getData(), packet.getLength()).length();
+		return readToStop(4, packet.getData(), packet.getLength()).length;
 	}
 
 	/**
-	 * @author bloo Parses a tftp packet in byte form and returns info
+	 * Split file into 512 byte chunks
+	 *
+	 * @param fileName
+	 *            - file to be split
+	 * @return
+	 * @throws IOException
+	 * @author BenjaminP
+	 */
+	public ArrayList<byte[]> readFile(String fileName) throws IOException {
+		ArrayList<byte[]> parsedData = new ArrayList<byte[]>();
+		byte[] buffer = new byte[512];
+		byte[] byteData;
+
+		byteData = Files.readAllBytes(Paths.get(fileName));
+
+		for (int i = 0; i < byteData.length; i += 512) {
+
+			if (i + 512 <= byteData.length) {
+				buffer = Arrays.copyOfRange(byteData, i, i + 512);
+			} else {
+				buffer = Arrays.copyOfRange(byteData, i, byteData.length);
+			}
+
+			parsedData.add(buffer);
+		}
+		return parsedData;
+	}
+
+	/**
+	 * Saves fully transfered file to appropriate location
+	 * 
+	 * @author Eric
+	 */
+	public int saveFile(ArrayList<byte[]> data, String fileName) throws IOException {
+		OutputStream file = new FileOutputStream(fileName);
+		System.out.println("Writing to file");
+		// for(byte b: data.get(0))
+		// System.out.println(b +", ");
+
+		for (int i = 0; i < data.size(); i++) {
+			file.write(data.get(i));
+		}
+
+		file.close();
+		return data.size();
+	}
+
+	/**
+	 * Parses a tftp packet in byte form and returns info
 	 * 
 	 * @param packet
 	 *            - packet to convert
 	 * @return contents of a packet
+	 * @author bloo
 	 */
 	protected String packetToString(DatagramPacket packet) {
 		String descriptor = "";
-		String msg;
 		byte[] data = packet.getData();
-		int index = 2;
-		int blockNum;
 		if (data.length > 0) {
 			if (data[0] == 0) {
 				descriptor += "Type: ";
 				if (data[1] == 1) {
-					descriptor += "RRQ\nFile name: ";
-
-					msg = readBytes(index, data, packet.getLength()); // read filename from the packets
-					descriptor += msg + "\nMode: "; // add the name to the packet descriptor
-					index += msg.length() + 1; // update the index
-
-					msg = readBytes(index, data, packet.getLength());
-					descriptor += msg + "\n";
-					index += msg.length() + 1;
-
+					descriptor += "RRQ\nFile name: " + getFileName(packet) + "\nMode: " + getMode(packet) + "\n";
 				} else if (data[1] == 2) {
-					descriptor += "WRQ\nFile name: ";
-					msg = readBytes(index, data, packet.getLength());
-					descriptor += msg + "\nMode: ";
-					index += msg.length() + 1;
-
-					msg = readBytes(index, data, packet.getLength());
-					descriptor += msg + "\n";
-					index += msg.length() + 1;
+					descriptor += "WRQ\nFile name: " + getFileName(packet) + "\nMode: " + getMode(packet) + "\n";
 				} else if (data[1] == 3) {
-					descriptor += "DATA\nBlock #: ";
-					blockNum = data[2] * 256 + data[3]; // convert 2 byte number to decimal
-					descriptor += blockNum + "\nBytes of data: " + readBytes(4, data, packet.getLength()).length()
-							+ "\n"; // add block number to
-					// descriptor as
-					// well as read the
-					// number of bytes
-					// in data
+					descriptor += "DATA\nBlock #: " + getBlockNum(packet) + "\nBytes of data: " + getDataLength(packet)
+							+ "\n";
 				} else if (data[1] == 4) {
-					descriptor += "ACK\nBlock #: ";
-					blockNum = data[2] * 256 + data[3];
-					descriptor += blockNum + "\n";
+					descriptor += "ACK\nBlock #: " + getBlockNum(packet) + "\n";
 				} else if (data[1] == 5) {
-					descriptor += "ERROR\nError Code";
-					blockNum = data[2] * 256 + data[3];
-					descriptor += blockNum + "ErrMsg: " + readBytes(4, data, packet.getLength()) + "\n";
+					descriptor += "ERROR\nError Code" + getBlockNum(packet) + "ErrMsg: " + getError(packet) + "\n";
 				}
 			}
 

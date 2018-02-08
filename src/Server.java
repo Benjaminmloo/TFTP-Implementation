@@ -2,12 +2,11 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 
-
 /**
  * @author BenjaminP, BenB
  *
  */
-public class Server extends TFTPConnection{
+public class Server extends TFTPConnection {
 	/*
 	 * File transferred in 512-byte blocks, 1 block per packet transfer. Block < 512
 	 * bytes terminates transfer Packet types: RRQ, WRQ, DATA, ACK, ERROR
@@ -20,14 +19,16 @@ public class Server extends TFTPConnection{
 	 * Block 1 -> Server Data Block 2 -> etc... Client ACK Block n RRQ acknowledged
 	 * with DATA, WRQ by ACK
 	 */
-	private DatagramSocket requestSocket;	
+	private DatagramSocket requestSocket;
 
 	/**
-	 * @author bloo
 	 * Constructor for a Server
 	 * 
-	 * @param serverPort - port for server to receive requests from
-	 * @param verbose - whether or not the server will be verbose
+	 * @param serverPort
+	 *            - port for server to receive requests from
+	 * @param verbose
+	 *            - whether or not the server will be verbose
+	 * @author bloo
 	 */
 	Server(int serverPort, boolean verbose) {
 		this.verbose = verbose;
@@ -40,18 +41,17 @@ public class Server extends TFTPConnection{
 	}
 
 	/**
-	 * @author bloo
-	 * Constructor for a Server
+	 * Constructor for a Server assumes verbosity
 	 * 
-	 * @param serverPort - port for server to receive requests from
+	 * @param serverPort
+	 *            - port for server to receive requests from
+	 * @author bloo
 	 */
 	Server(int serverPort) {
 		this(serverPort, true);
 	}
 
-
 	/**
-	 * @author bloo
 	 * methods the manages packet being received
 	 * 
 	 * sends any received packets to be processed by another method
@@ -59,15 +59,18 @@ public class Server extends TFTPConnection{
 	 * @param threaded
 	 *            flag to determine whether or not to use threads to wait for
 	 *            request
+	 * 
+	 * @author bloo
 	 */
-	
+
 	void waitForRequest() {
 		DatagramPacket receivedPacket;
 		while (true) {
 			try {
 				receivedPacket = receive(requestSocket); // wait for new request packet
-				new Thread(new ThreadedConnection(receivedPacket)).start(); // start new client connection for the recently acquired
-																// request
+				new Thread(new ThreadedConnection(receivedPacket)).start(); // start new client connection for the
+																			// recently acquired
+				// request
 			} catch (IllegalArgumentException e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -76,10 +79,10 @@ public class Server extends TFTPConnection{
 	}
 
 	/**
-	 * @author bloo
 	 * Start the sever waiting for request
 	 * 
 	 * @param args
+	 * @author bloo
 	 */
 	public static void main(String[] args) {
 		Server s = new Server(69);

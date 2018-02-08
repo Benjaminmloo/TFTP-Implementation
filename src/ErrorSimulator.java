@@ -17,13 +17,19 @@ public class ErrorSimulator extends TFTPConnection {
 	private int eSimPort, serverPort = 69;
 
 	/**
-	 * @author bloo Base constructor for Host
+	 * Base constructor for Host
 	 * 
-	 * @param clientPort
+	 * @param eSimPort
+	 *            - the port that the error simulator listen for requests on
 	 * @param serverPort
+	 *            - the port that the server listens for requests on
+	 * @param verbose
+	 *            - verbosity of the error simulator
+	 * 
+	 * @author bloo
 	 */
-	ErrorSimulator(int clientPort, int serverPort, boolean verbose) {
-		this.eSimPort = clientPort;
+	ErrorSimulator(int eSimPort, int serverPort, boolean verbose) {
+		this.eSimPort = eSimPort;
 		this.serverPort = serverPort;
 		this.verbose = verbose;
 		try {
@@ -40,16 +46,18 @@ public class ErrorSimulator extends TFTPConnection {
 	}
 
 	/**
-	 * @author bloo Default constructor setting the client and servers ports to
-	 *         their defaults
+	 * Default constructor setting the client and servers ports to their defaults
+	 * 
+	 * @author bloo
 	 */
 	ErrorSimulator() {
 		this(23, 69, true);
 	}
 
 	/**
-	 * @author bloo Waits for packets and passes them onto their recipient
+	 * Waits for packets and passes them onto their recipient
 	 * 
+	 * @author bloo
 	 */
 	void startPassthrough() {
 		DatagramPacket initialPacket, responsePacket;
@@ -68,31 +76,40 @@ public class ErrorSimulator extends TFTPConnection {
 			responsePacket = receive(mediatorSocket);
 			serverAddress = responsePacket.getSocketAddress();
 			send(responsePacket.getData(), mediatorSocket, clientAddress);
-			meddiateConnection();
+			mediateTransfer();
 		}
 	}
 
-	void meddiateConnection() {
+	/**
+	 * Mediates connection between client and server once connection has been
+	 * initiated. exits when file transfer is complete
+	 * 
+	 * @author BLoo
+	 */
+	void mediateTransfer() {
 		DatagramPacket clientPacket, serverPacket = new DatagramPacket(createAck(0), 4);
 		while (true) {
 			clientPacket = receive(mediatorSocket); // wait to receive packet from client
 			clientAddress = clientPacket.getSocketAddress();
 			send(clientPacket.getData(), mediatorSocket, serverAddress);
-			
-			if(getType(serverPacket) == 3 && getDataLength(serverPacket) < 512)break;
-			
+
+			if (getType(serverPacket) == 3 && getDataLength(serverPacket) < 512)
+				break;
+
 			serverPacket = receive(mediatorSocket);
 			serverAddress = serverPacket.getSocketAddress();
 			send(serverPacket.getData(), mediatorSocket, clientAddress);
 
-			if (getType(clientPacket) == 3 && getDataLength(clientPacket) < 512)break;
+			if (getType(clientPacket) == 3 && getDataLength(clientPacket) < 512)
+				break;
 		}
 	}
 
 	/**
-	 * @author bloo Control loop that mediates connection between client and server
+	 * Control loop that mediates connection between client and server
 	 * 
 	 * @param args
+	 * @author Bloo
 	 */
 	public static void main(String[] args) {
 		ErrorSimulator h = new ErrorSimulator(23, 69, true);

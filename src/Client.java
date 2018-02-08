@@ -2,20 +2,16 @@
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
 /**
- * Author : Eric Morrissette
+ * @Author Eric Morrissette
  * 
- * TFTP Client
+ *         TFTP Client
  */
 
 public class Client extends TFTPConnection {
-
-	private DatagramPacket sendPacket, receivePacket;
-	private DatagramSocket sendReceiveSocket;
 
 	// OPCODES for TFTP transfer
 	private static final byte OP_WRQ = 2;
@@ -38,13 +34,6 @@ public class Client extends TFTPConnection {
 
 	public Client() {
 		this.verbose = true;
-		// Create datagram socket to send and receive packets
-		try {
-			sendReceiveSocket = new DatagramSocket();
-		} catch (SocketException se) { // Can't create the socket.
-			se.printStackTrace();
-			System.exit(1);
-		}
 	}
 
 	/**
@@ -53,12 +42,24 @@ public class Client extends TFTPConnection {
 	 */
 	public void establishConnection() {
 		DatagramSocket connectionSocket;
+
+		if (transferType == OP_WRQ) {
+			try {
+				splitFile = readFile(localFileName);
+
+				blocks = splitFile.size();
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+		}
+
 		try {
 			connectionSocket = new DatagramSocket();
 			// create message for DatagramPacket
 			byte opCode = transferType; // WRQ or RRQ
 			byte file[] = serverFileName.getBytes();
-	
+
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			try {
 				outputStream.write(ZERO_BYTE);
@@ -67,39 +68,36 @@ public class Client extends TFTPConnection {
 				outputStream.write(ZERO_BYTE);
 				outputStream.write(MODE);
 				outputStream.write(ZERO_BYTE);
-	
+
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
-	
+
 			byte msg[] = outputStream.toByteArray();
-	
+
 			try {
 				send(msg, connectionSocket, InetAddress.getLocalHost(), sendPort);
 				blockNum = 1;
 				handleRequest(connectionSocket);
-	
+
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
-			
+
 		} catch (SocketException e2) {
 			e2.printStackTrace();
 			System.exit(1);
 		}
 
 	}
-	
-	
 
 	private void handleRequest(DatagramSocket connectionSocket) {
 		DatagramPacket newPacket;
 		SocketAddress returnAddress;
 		byte[] packetData;
 		byte[] readData;
-		System.out.println("Num Blocks: " + blocks);
-		while(true) {
+		while (true) {
 			newPacket = receive(connectionSocket);
 			returnAddress = newPacket.getSocketAddress();
 			packetData = newPacket.getData();
@@ -109,204 +107,52 @@ public class Client extends TFTPConnection {
 			{
 				// connection established begin transfer
 				if (transferType == OP_WRQ) { // send DATA to server 1 block at a time.
-					if(blockNum <= blocks) { 
+					if (blockNum <= blocks) {
 						send(createData(blockNum, splitFile.get(blockNum - 1)), connectionSocket, returnAddress);
 						blockNum++;
-					}else {
-						closeConnection();
+					} else {
+						closeConnection(connectionSocket);
 					}
-	
-				}else if (transferType == OP_RRQ) { // store received data and send ACK to server.
+
+				} else if (transferType == OP_RRQ) { // store received data and send ACK to server.
 					// for now assume no packets or lost or duplicated, just process data.
-					if(getBlockNum(newPacket) == 1) {
+					if (getBlockNum(newPacket) == 1) {
 						tempFileToSave = new ArrayList<byte[]>();
 					}
-					readData = getData(newPacket).getBytes();
-	
+					readData = getByteData(newPacket);
+
 					tempFileToSave.add(readData);
-	
+
 					send(createAck(getBlockNum(newPacket)), connectionSocket, returnAddress);
-	
+
 					// if message is less then 512 bytes, transfer is over. else ask for following
 					// block of data
+					System.out.println("Size: " + readData.length);
 					if (readData.length < 512) {
 						// file is fully transfered from server, save to appropriate location.
 						try {
-							saveFile();
+							saveFile(tempFileToSave, localFileName);
 						} catch (IOException e) {
 							e.printStackTrace();
 							System.exit(1);
 						}
-						closeConnection();
-					}	
+						closeConnection(connectionSocket);
+					}
 				}
 			} else {
 				// connection to server was lost.
-				closeConnection();
+				closeConnection(connectionSocket);
 			}
-		}
-	}
-
-	/**
-	 * Receives data packets from server, handled according to opcode.
-	 */
-
-	public void receive() throws IOException {
-
-		byte data[] = new byte[100];
-		receivePacket = new DatagramPacket(data, data.length);
-
-		try {
-			System.out.println("Waiting...\n");
-			// Block until a datagram is received via sendReceiveSocket.
-			sendReceiveSocket.receive(receivePacket);
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-
-		if (verbose) { // print out details in verbose mode
-			System.out.println("Client: Packet received:");
-			System.out.println("From host: " + receivePacket.getAddress());
-			System.out.println("Host port: " + receivePacket.getPort());
-			int len = receivePacket.getLength();
-			System.out.println("Length: " + len);
-			System.out.print("Containing [String]: ");
-
-			// Form a String from the byte array.
-			String received = new String(data, 0, len);
-			System.out.println(received);
-			//
-			System.out.print("Containing [Bytes]: ");
-			// print byte array"
-			//
-			System.out.println(Arrays.toString(data).substring(0, 11) + "]\n");
-
 		}
 	}
 
 	/**
 	 * closes the datagram socket and quits the program
 	 */
-	public void closeConnection() {
+	public void closeConnection(DatagramSocket socket) {
 
-		sendReceiveSocket.close();
+		socket.close();
 		System.exit(1);
-	}
-
-	/**
-	 * Sends ACK packet to server
-	 */
-	public void sendACK(int port) {
-
-		byte opCode = OP_ACK;
-		byte blockNum = 0;
-
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-		outputStream.write(opCode);
-		outputStream.write(blockNum);
-
-		byte msg[] = outputStream.toByteArray();
-
-		sendAPacket(msg, port);
-	}
-
-	/**
-	 * send a packet via datagram socket to server
-	 *
-	 * @param msg
-	 *            - data to be sent via packet to server
-	 * 
-	 */
-	public void sendAPacket(byte[] msg, int port) {
-
-		try {
-			sendPacket = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), port);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-
-		if (verbose) { // print out info in verbose mode.
-			System.out.println("Client: Sending packet:");
-			System.out.println("To host: " + sendPacket.getAddress());
-			System.out.println("Destination host port: " + sendPacket.getPort());
-			int len = sendPacket.getLength();
-			System.out.println("Length: " + len);
-
-			System.out.print("Containing [String]: ");
-			System.out.println(new String(sendPacket.getData(), 0, len)); // or could print "s"
-			System.out.print("Containing [Bytes]: ");
-			System.out.println(sendPacket.getData()); // or could print "s"
-
-		}
-		// Send the packet to the server
-
-		try {
-			sendReceiveSocket.send(sendPacket);
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-
-		if (verbose) {
-			System.out.println("Client: Packet sent.\n");
-		}
-
-	}
-
-	/**
-	 * Split file into 512 byte chunks
-	 * 
-	 * @param fileName
-	 *            - file to be split
-	 */
-	public void splitFileToSend(String fileName) throws IOException {
-		byte[] buffer = new byte[512];
-		byte[]data;
-		splitFile = new ArrayList<byte[]>();
-		FileInputStream in = new FileInputStream(fileName);
-		int rc = in.read(buffer);
-		while (rc != -1) {
-			data = Arrays.copyOf(buffer, rc);
-			splitFile.add(data);
-			rc = in.read(buffer);
-			//if(verbose)System.out.println("New block: " + new String(buffer));
-		}
-		in.close();
-
-		//if(verbose)System.out.println(spiltFileToString(splitFile));
-		blocks = splitFile.size();
-	}
-	
-	public String spiltFileToString(ArrayList<byte[]> data) {
-		String out ="{";
-		for(byte[] d:data) {
-			out += new String(d) +",\n ";
-		}
-		out += "}";
-		return out;
-	}
-
-	/**
-	 * Saves fully transfered file to appropriate location, used during RRQ transfer
-	 * 
-	 */
-	public void saveFile() throws IOException {
-
-		FileOutputStream out = new FileOutputStream(localFileName);
-
-		for (int i = 0; i < tempFileToSave.size(); i++) {
-			out.write(tempFileToSave.get(i));
-		}
-		out.close();
-		blocks = tempFileToSave.size();
-	}
-	
-
-	private String getLocalFileName() {
-		return localFileName;
 	}
 
 	/**
@@ -323,22 +169,21 @@ public class Client extends TFTPConnection {
 			try {
 				System.out.print("Verbose mode (true/false): ");
 				verbose = n.nextBoolean();
-				
+
 				break;
 			} catch (InputMismatchException e) {
 				System.out.println("Invalid input!");
 			}
 		}
-		
+
 		while (true) { // get transfer mode
 			try {
 				System.out.print("Test mode (true/false): ");
-				if(n.nextBoolean()){
+				if (n.nextBoolean()) {
 					sendPort = 23;
-				}else {
+				} else {
 					sendPort = 69;
 				}
-				System.out.println("Port to send request: " + sendPort);
 				break;
 			} catch (InputMismatchException e) {
 				System.out.println("Invalid input!");
@@ -363,7 +208,6 @@ public class Client extends TFTPConnection {
 
 		while (true) { // get file name
 
-			
 			try {
 				System.out.print("Enter local File name (don't forget \"\\\\\"): ");
 				localFileName = n.next();
@@ -372,7 +216,7 @@ public class Client extends TFTPConnection {
 				System.out.println("Invalid input!");
 			}
 		}
-		
+
 		while (true) { // get file name
 
 			try {
@@ -387,20 +231,11 @@ public class Client extends TFTPConnection {
 
 	}
 
-	public static void main(String args[]){
+	public static void main(String args[]) {
 		Client c = new Client();
 
 		// Get information for file transfer
 		c.getUserInput();
-
-		if (transferType == OP_WRQ) {
-			try {
-				c.splitFileToSend(c.getLocalFileName());
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
-		}
 
 		// Establish TFTP connection to server
 		c.establishConnection();
