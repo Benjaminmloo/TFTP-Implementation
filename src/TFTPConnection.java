@@ -176,7 +176,7 @@ public abstract class TFTPConnection {
 		DatagramPacket newPacket;
 
 		if (getType(packet) == OP_DATA) { // if the initial packet is a data packet
-			data.add(packet.getData());
+			data.add(getByteData(packet));
 			send(createAck(1), socket, returnAddress);
 		}
 
@@ -598,7 +598,6 @@ public abstract class TFTPConnection {
 		byteData = Files.readAllBytes(Paths.get(fileName));
 
 		for (int i = 0; i < byteData.length; i += 512) {
-
 			if (i + 512 <= byteData.length) {
 				buffer = Arrays.copyOfRange(byteData, i, i + 512);
 			} else {
