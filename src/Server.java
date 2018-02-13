@@ -1,6 +1,7 @@
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.SocketException;
+import java.util.InputMismatchException;
+import java.util.Scanner;
 
 /**
  * @author BenjaminP, BenB
@@ -19,7 +20,8 @@ public class Server extends TFTPConnection {
 	 * Block 1 -> Server Data Block 2 -> etc... Client ACK Block n RRQ acknowledged
 	 * with DATA, WRQ by ACK
 	 */
-	private DatagramSocket requestSocket;
+	private WaitForRequest waitThread;
+	boolean cont = true;
 
 	/**
 	 * Constructor for a Server
@@ -32,12 +34,8 @@ public class Server extends TFTPConnection {
 	 */
 	Server(int serverPort, boolean verbose) {
 		this.verbose = verbose;
-		try {
-			requestSocket = new DatagramSocket(69);
-		} catch (SocketException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
+		waitThread = new WaitForRequest(waitForSocket(serverPort));
+		waitThread.start();
 	}
 
 	/**
@@ -63,18 +61,90 @@ public class Server extends TFTPConnection {
 	 * @author bloo
 	 */
 
-	void waitForRequest() {
-		DatagramPacket receivedPacket;
-		while (true) {
-			try {
-				receivedPacket = receive(requestSocket); // wait for new request packet
-				new Thread(new ThreadedConnection(receivedPacket)).start(); // start new client connection for the
-																			// recently acquired
-				// request
-			} catch (IllegalArgumentException e) {
-				e.printStackTrace();
-				System.exit(1);
+	void userInterface() {
+		Scanner n = new Scanner(System.in);
+		byte operation;
+
+		while (cont) {
+			while (true) { // get transfer type
+				try {
+					System.out.print("settings(1), quit(2): ");
+					operation = n.nextByte();
+					break;
+				} catch (InputMismatchException e) {
+					System.out.println("Invalid input!");
+					n.next();
+				}
+
 			}
+
+			if (operation == 1) {
+				while (true) { // get transfer mode
+					try {
+						System.out.print("Verbose mode (true/false): ");
+						verbose = n.nextBoolean();
+
+						break;
+					} catch (InputMismatchException e) {
+						System.out.println("Invalid input!");
+						n.next();
+					}
+				}
+
+			} else if (operation == 2) {
+				cont = false;
+				waitThread.interrupt();
+			} else {
+				System.out.println("Invalid input! enter 1 or 2");
+			}
+		}
+
+		n.close();
+	}
+
+	/**
+	 * Thread that waits for tftp requests and dipatches Threaded connections to
+	 * handle the requests
+	 * 
+	 * @author BLoo
+	 *
+	 */
+	private class WaitForRequest extends Thread {
+		DatagramPacket receivedPacket;
+		DatagramSocket requestSocket;
+
+		/**
+		 * constructor for WaitForRequest threads
+		 * 
+		 * @param socket
+		 *            - the socket that will be waited on, should already have port
+		 *            attached
+		 */
+		protected WaitForRequest(DatagramSocket socket) {
+			requestSocket = socket;
+		}
+
+		@Override
+		public void run() {
+			System.out.println("waiting");
+			while (cont) {
+				try {
+					receivedPacket = receive(requestSocket); // wait for new request packet
+					if (receivedPacket != null)
+						new Thread(new ThreadedConnection(receivedPacket, verbose)).start(); // start new client
+																								// connection for the
+					// recently acquired request
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+					System.exit(1);
+				}
+			}
+		}
+
+		@Override
+		public void interrupt() {
+			super.interrupt();
+			requestSocket.close();
 		}
 	}
 
@@ -85,7 +155,7 @@ public class Server extends TFTPConnection {
 	 * @author bloo
 	 */
 	public static void main(String[] args) {
-		Server s = new Server(69);
-		s.waitForRequest();
+		Server s = new Server(SERVER_PORT);
+		s.userInterface();
 	}
 }

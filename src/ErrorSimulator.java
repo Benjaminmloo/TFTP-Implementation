@@ -51,7 +51,7 @@ public class ErrorSimulator extends TFTPConnection {
 	 * @author bloo
 	 */
 	ErrorSimulator() {
-		this(23, 69, true);
+		this(ESIM_PORT, SERVER_PORT, true);
 	}
 
 	/**
