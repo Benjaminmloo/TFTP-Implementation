@@ -68,14 +68,17 @@ public class Client extends TFTPConnection {
 
 	public void userInterface() {
 
-		Scanner n = new Scanner(System.in);
-		String localFile = null, serverFile = null;
-		boolean cont = true;
-		byte operation;
-		int sendPort = ESIM_PORT;
+		Scanner n = new Scanner(System.in);	//	Scanner for user input
+		String localFile = null, serverFile = null; /* 	localFile: Local file to be written or read 
+														serverFile: File to be read or written on the server	*/
+		boolean cont = true;	
+		byte operation;		//	Operation type to be requested
+		int sendPort = ESIM_PORT;	// Error simulator Port #
 
+		/*	Continue execution until exit is issued	*/
 		while (cont) {
-			while (true) { // get transfer type
+			//
+			while (true) {
 				try {
 					System.out.print("RRQ(1), WRQ(2), settings(3), quit(4): ");
 					operation = n.nextByte();
