@@ -32,7 +32,7 @@ public class Server extends TFTPConnection {
 	 *            - whether or not the server will be verbose
 	 * @author bloo
 	 */
-	Server(int serverPort, boolean verbose) {
+	public Server(int serverPort, boolean verbose) {
 		this.verbose = verbose;
 		waitThread = new WaitForRequest(waitForSocket(serverPort));
 		waitThread.start();
@@ -45,10 +45,17 @@ public class Server extends TFTPConnection {
 	 *            - port for server to receive requests from
 	 * @author bloo
 	 */
-	Server(int serverPort) {
+	public Server(int serverPort) {
 		this(serverPort, true);
 	}
 
+	// For Testing Purposes
+	public int getWaitForRequest() {
+		if(waitThread.getDatagramSoc() == SERVER_PORT) {
+			return waitThread.getDatagramSoc();
+		}
+		return 0;
+	}
 	/**
 	 * methods the manages packet being received
 	 * 
@@ -124,6 +131,12 @@ public class Server extends TFTPConnection {
 			requestSocket = socket;
 		}
 
+		// Testing Purposes
+		public int getDatagramSoc() {
+			System.out.println(" JUnit Test: " + requestSocket.getLocalPort());
+			return requestSocket.getLocalPort();
+		}
+		
 		@Override
 		public void run() {
 			System.out.println("waiting");

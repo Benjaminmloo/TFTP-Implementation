@@ -5,13 +5,15 @@ import java.util.InputMismatchException;
 import java.util.Scanner;
 
 /**
- * @Author Eric Morrissette
+ * @Author Eric Morrissette, Andrew Nguyen
  * 
  *         TFTP Client
  */
 
 public class Client extends TFTPConnection {
-
+	
+	byte operation;		//	Operation type to be requested
+	
 	public Client() {
 		this.verbose = true;
 	}
@@ -33,7 +35,7 @@ public class Client extends TFTPConnection {
 				System.exit(1);
 			}
 		}
-
+		
 		connectionSocket = waitForSocket();
 
 		try {
@@ -63,16 +65,29 @@ public class Client extends TFTPConnection {
 	}
 
 	/**
+	 * For testing purpose - JUnit hard set operation
+	 * @param testSubject
+	 */
+	public void setOperation(byte testSubject) {
+		operation = testSubject;
+	}
+	
+	/**
+	 * For testing purpose - JUnit
+	 */
+	public byte getOperation() {
+		return operation;
+	}
+	
+	/**
 	 * Basic UI, gets input from user ** WILL be upgraded in future iterations.
 	 */
-
 	public void userInterface() {
 
 		Scanner n = new Scanner(System.in);	//	Scanner for user input
 		String localFile = null, serverFile = null; /* 	localFile: Local file to be written or read 
 														serverFile: File to be read or written on the server	*/
 		boolean cont = true;	
-		byte operation;		//	Operation type to be requested
 		int sendPort = ESIM_PORT;	// Error simulator Port #
 
 		/*	Continue execution until exit is issued	*/
