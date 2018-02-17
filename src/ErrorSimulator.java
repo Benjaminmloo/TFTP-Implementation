@@ -37,8 +37,8 @@ public class ErrorSimulator extends TFTPConnection {
 			mediatorSocket = new DatagramSocket();
 
 		} catch (SocketException e) {
-			eSimSocket.close();
-			mediatorSocket.close();
+			//eSimSocket.close();
+			//mediatorSocket.close();
 
 			e.printStackTrace();
 			System.exit(1);
@@ -111,9 +111,9 @@ public class ErrorSimulator extends TFTPConnection {
 	 * @param args
 	 * @author Bloo
 	 */
-	public static void main(String[] args) {
+	/*public static void main(String[] args) {
 		ErrorSimulator h = new ErrorSimulator(23, 69, true);
 		h.startPassthrough();
-	}
+	}*/
 
 }

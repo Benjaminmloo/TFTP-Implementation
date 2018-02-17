@@ -80,6 +80,7 @@ public class Client extends TFTPConnection {
 			//
 			while (true) {
 				try {
+					this.outputWindow.append("RRQ(1), WRQ(2), settings(3), quit(4): ");
 					System.out.print("RRQ(1), WRQ(2), settings(3), quit(4): ");
 					operation = n.nextByte();
 					break;
@@ -153,10 +154,10 @@ public class Client extends TFTPConnection {
 		n.close();
 	}
 
-	public static void main(String args[]) {
+	/*public static void main(String args[]) {
 		Client c = new Client();
 
 		// Get information for file transfer
 		c.userInterface();
-	}
+	}*/
 }

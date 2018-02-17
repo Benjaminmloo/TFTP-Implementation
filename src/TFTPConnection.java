@@ -16,12 +16,15 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.swing.JTextArea;
+
 /**
  * @author BenjaminP EricM, BenjaminL
  *
  */
 public abstract class TFTPConnection {
 	protected boolean verbose;
+	protected JTextArea outputWindow =  new JTextArea();
 
 	protected static final String OCTET = "octet";
 	protected static final String NETASCII = "netascii";
@@ -83,7 +86,7 @@ public abstract class TFTPConnection {
 				return new DatagramSocket(port);
 			} catch (SocketException e) {
 				e.printStackTrace();
-				;
+				System.exit(1);
 			}
 		}
 	}
@@ -629,6 +632,11 @@ public abstract class TFTPConnection {
 
 		file.close();
 		return data.size();
+	}
+	
+	public JTextArea getOutputWindow()
+	{
+		return this.outputWindow;
 	}
 
 	/**
