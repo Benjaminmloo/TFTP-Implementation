@@ -1,4 +1,7 @@
 import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,6 +15,7 @@ public class UserInterface {
 	
 	private JFrame frame;
 	private JTextField inputField;
+	private JTabbedPane tabPane;
 	
 	private Client client;
 	private ErrorSimulator errorSim;
@@ -25,52 +29,62 @@ public class UserInterface {
 		
 		frame = new JFrame("File Transfer System");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		GridLayout grid = new GridLayout(2,2);
-		frame.setLayout(grid);
 		
-		Container inputContainer = new Container();
-		inputField = new JTextField("Input text here");
-		inputContainer.add(inputField);
+		
+		
+		
+		tabPane = new JTabbedPane();
+		inputField = new JTextField();
 		inputField.addActionListener(	new InputController(inputField)	);
-		inputContainer.setVisible(true);
-		frame.add(inputField);
 		
 		
 		JTextArea clientArea = client.getOutputWindow();
 		clientArea.append("Client output:\n");
 		clientArea.setEditable(false);
 		JScrollPane clientWindow = new JScrollPane(clientArea);
-		clientWindow.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+		clientWindow.setPreferredSize(new Dimension(600, 400));
 		clientWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-		frame.add(clientWindow);
+		tabPane.add("Client", clientWindow);
+
 		
 		JTextArea errorArea = errorSim.getOutputWindow();
 		errorArea.append("ErrorSim output:\n");
 		errorArea.setEditable(false);
 		JScrollPane errorWindow = new JScrollPane(errorArea);
-		errorWindow.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+		errorWindow.setPreferredSize(new Dimension(600, 400));
 		errorWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-		frame.add(errorWindow);
+		tabPane.add("Error Simulator", errorWindow);
+
 
 		JTextArea serverArea = server.getOutputWindow();
 		serverArea.append("Server output:\n");
 		serverArea.setEditable(false);
 		JScrollPane serverWindow = new JScrollPane(serverArea);
-		serverWindow.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+		serverWindow.setPreferredSize(new Dimension(600, 400));
 		serverWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-		frame.add(serverWindow);
+		tabPane.add("Server", serverWindow);
+
+		
+		JPanel panel = new JPanel();
+		
+		GridBagConstraints gbc =  new GridBagConstraints();
+		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+		panel.add(tabPane, gbc);
+		panel.add(new JLabel("Input commands here: "), gbc);
+		panel.add(inputField, gbc);
+		frame.add(panel);
 		
 		
 		frame.pack();
 		frame.setVisible(true);
 		frame.setSize(720, 480);
 		
-		WindowThread clientThread = new WindowThread(client);
-		clientThread.run();
-		WindowThread errorThread = new WindowThread(errorSim);
-		errorThread.run();
-		WindowThread serverThread = new WindowThread(server);
-		serverThread.run();
+		Thread clientThread = new Thread(	new WindowThread(client));
+		clientThread.start();
+		Thread errorThread = new Thread(	new WindowThread(errorSim));
+		errorThread.start();
+		Thread serverThread = new Thread(	new WindowThread(server));
+		serverThread.start();
 	}
 	
 	private void forwardInput(String s)

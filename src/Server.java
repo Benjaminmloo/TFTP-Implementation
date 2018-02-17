@@ -8,6 +8,7 @@ import java.util.Scanner;
  *
  */
 public class Server extends TFTPConnection {
+	
 	/*
 	 * File transferred in 512-byte blocks, 1 block per packet transfer. Block < 512
 	 * bytes terminates transfer Packet types: RRQ, WRQ, DATA, ACK, ERROR
@@ -68,6 +69,7 @@ public class Server extends TFTPConnection {
 		while (cont) {
 			while (true) { // get transfer type
 				try {
+					this.outputWindow.append("settings(1), quit(2): ");
 					System.out.print("settings(1), quit(2): ");
 					operation = n.nextByte();
 					break;
