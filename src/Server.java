@@ -8,21 +8,12 @@ import java.util.Scanner;
  *
  */
 public class Server extends TFTPConnection {
-	/*
-	 * File transferred in 512-byte blocks, 1 block per packet transfer. Block < 512
-	 * bytes terminates transfer Packet types: RRQ, WRQ, DATA, ACK, ERROR
-	 * TID(transfer ID) Client gets random TID when a request is prepared, when a
-	 * server grants a request it also gets a random TID Source and destination TID
-	 * associated with every packet but not stored in the packet, used asDel
-	 * source/destination ports for UDP Write: Client WRQ -> Server ACK Block 0 ->
-	 * Client Data Block 1 -> Server ACK Block 1 -> Client Data Block 2 -> etc...
-	 * Server ACK Block n Read: Client RRQ -> Server Data Block 1 -> Client ACK
-	 * Block 1 -> Server Data Block 2 -> etc... Client ACK Block n RRQ acknowledged
-	 * with DATA, WRQ by ACK
-	 */
+	
+	//	Class Variable definition start
 	private WaitForRequest waitThread;
 	boolean cont = true;
-
+	//	Class Variable definition finish
+	
 	/**
 	 * Constructor for a Server
 	 * 
@@ -56,59 +47,7 @@ public class Server extends TFTPConnection {
 		}
 		return 0;
 	}
-	/**
-	 * methods the manages packet being received
-	 * 
-	 * sends any received packets to be processed by another method
-	 * 
-	 * @param threaded
-	 *            flag to determine whether or not to use threads to wait for
-	 *            request
-	 * 
-	 * @author bloo
-	 */
-
-	void userInterface() {
-		Scanner n = new Scanner(System.in);
-		byte operation;
-
-		while (cont) {
-			while (true) { // get transfer type
-				try {
-					System.out.print("settings(1), quit(2): ");
-					operation = n.nextByte();
-					break;
-				} catch (InputMismatchException e) {
-					System.out.println("Invalid input!");
-					n.next();
-				}
-
-			}
-
-			if (operation == 1) {
-				while (true) { // get transfer mode
-					try {
-						System.out.print("Verbose mode (true/false): ");
-						verbose = n.nextBoolean();
-
-						break;
-					} catch (InputMismatchException e) {
-						System.out.println("Invalid input!");
-						n.next();
-					}
-				}
-
-			} else if (operation == 2) {
-				cont = false;
-				waitThread.interrupt();
-			} else {
-				System.out.println("Invalid input! enter 1 or 2");
-			}
-		}
-
-		n.close();
-	}
-
+	
 	/**
 	 * Thread that waits for tftp requests and dipatches Threaded connections to
 	 * handle the requests
@@ -159,6 +98,56 @@ public class Server extends TFTPConnection {
 			super.interrupt();
 			requestSocket.close();
 		}
+	}
+	
+	/**
+	 * methods the manages packet being received
+	 * 
+	 * sends any received packets to be processed by another method
+	 * 
+	 * @param threaded
+	 *            flag to determine whether or not to use threads to wait for
+	 *            request
+	 * 
+	 * @author bloo
+	 */
+	void userInterface() {
+		Scanner n = new Scanner(System.in);
+		byte operation;
+
+		while (cont) {
+			while (true) {
+				try {
+					System.out.print("settings(1), quit(2): ");
+					operation = n.nextByte();
+					break;
+				} catch (InputMismatchException e) {
+					System.out.println("Invalid input!");
+					n.next();
+				}
+
+			}
+
+			//Turns on verbose or exits server
+			if (operation == 1) 
+				while (true) {
+					try {
+						System.out.print("Verbose mode (true/false): ");
+						verbose = n.nextBoolean();
+						break;
+					} catch (InputMismatchException e) {
+						System.out.println("Invalid input!");
+						n.next();
+					}
+
+			} else if (operation == 2) {
+				cont = false;
+				waitThread.interrupt();
+			} else 
+				System.out.println("Invalid input! enter 1 or 2");
+		}
+
+		n.close();
 	}
 
 	/**

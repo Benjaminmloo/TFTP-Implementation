@@ -11,9 +11,12 @@ import java.net.UnknownHostException;
  *
  */
 public class ErrorSimulator extends TFTPConnection {
+
+	//	Class Variable definition start
 	private DatagramSocket eSimSocket, mediatorSocket;
 	private SocketAddress clientAddress, serverAddress;
-
+	//	Class Variable definition finish
+	
 	private int eSimPort, serverPort = 69;
 
 	/**
@@ -55,6 +58,32 @@ public class ErrorSimulator extends TFTPConnection {
 	}
 
 	/**
+	 * Mediates connection between client and server once connection has been
+	 * initiated. exits when file transfer is complete
+	 * 
+	 * @author BLoo
+	 */
+	void mediateTransfer() {
+		DatagramPacket clientPacket, serverPacket = new DatagramPacket(createAck(0), 4);
+		while (true) {
+			clientPacket = receive(mediatorSocket); // wait to receive packet from client
+			clientAddress = clientPacket.getSocketAddress();
+			send(clientPacket.getData(), mediatorSocket, serverAddress);
+
+			if (getType(serverPacket) == 3 && getDataLength(serverPacket) < 512)
+				break;
+
+			serverPacket = receive(mediatorSocket);
+			serverAddress = serverPacket.getSocketAddress();
+			send(serverPacket.getData(), mediatorSocket, clientAddress);
+
+			if (getType(clientPacket) == 3 && getDataLength(clientPacket) < 512)
+				break;
+		}
+	}
+	
+
+	/**
 	 * Waits for packets and passes them onto their recipient
 	 * 
 	 * @author bloo
@@ -77,31 +106,6 @@ public class ErrorSimulator extends TFTPConnection {
 			serverAddress = responsePacket.getSocketAddress();
 			send(responsePacket.getData(), mediatorSocket, clientAddress);
 			mediateTransfer();
-		}
-	}
-
-	/**
-	 * Mediates connection between client and server once connection has been
-	 * initiated. exits when file transfer is complete
-	 * 
-	 * @author BLoo
-	 */
-	void mediateTransfer() {
-		DatagramPacket clientPacket, serverPacket = new DatagramPacket(createAck(0), 4);
-		while (true) {
-			clientPacket = receive(mediatorSocket); // wait to receive packet from client
-			clientAddress = clientPacket.getSocketAddress();
-			send(clientPacket.getData(), mediatorSocket, serverAddress);
-
-			if (getType(serverPacket) == 3 && getDataLength(serverPacket) < 512)
-				break;
-
-			serverPacket = receive(mediatorSocket);
-			serverAddress = serverPacket.getSocketAddress();
-			send(serverPacket.getData(), mediatorSocket, clientAddress);
-
-			if (getType(clientPacket) == 3 && getDataLength(clientPacket) < 512)
-				break;
 		}
 	}
 

@@ -21,6 +21,8 @@ import java.util.Map;
  *
  */
 public abstract class TFTPConnection {
+	
+	//	Class Variable definition start
 	protected boolean verbose;
 
 	protected static final String OCTET = "octet";
@@ -38,7 +40,8 @@ public abstract class TFTPConnection {
 	protected static final byte OP_DATA = 3;
 	protected static final byte OP_ACK = 4;
 	protected static final byte OP_ERROR = 5;
-
+	//	Class Variable definition end
+	
 	protected static Map<Byte, String> PacketTypes;
 	static {
 		PacketTypes = new HashMap<>();
