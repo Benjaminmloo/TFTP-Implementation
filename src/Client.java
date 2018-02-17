@@ -12,6 +12,7 @@ import java.util.Scanner;
 
 public class Client extends TFTPConnection {
 	
+	//	Test Variable
 	byte operation;		//	Operation type to be requested
 	
 	public Client() {
