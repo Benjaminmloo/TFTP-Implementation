@@ -92,12 +92,15 @@ public class UserInterface {
 		switch (tabPane.getSelectedIndex())
 		{
 		case 0:
+			client.takeInput(s);
 			client.getOutputWindow().append(s + "\n");
 			break;
 		case 1:
+			errorSim.takeInput(s);
 			errorSim.getOutputWindow().append(s + "\n");
 			break;
 		case 2:
+			server.takeInput(s);
 			server.getOutputWindow().append(s + "\n");
 			break;
 		}
