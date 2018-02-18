@@ -24,4 +24,9 @@ class serverTest extends TFTPConnection {
 		}
 	}
 
+	@Override
+	public void takeInput(String s) {
+		return;
+	}
+
 }

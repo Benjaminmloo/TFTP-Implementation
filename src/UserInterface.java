@@ -1,13 +1,7 @@
-import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
 
 import javax.swing.*;
 
@@ -93,12 +87,15 @@ public class UserInterface {
 		{
 		case 0:
 			client.getOutputWindow().append(s + "\n");
+			client.takeInput(s);
 			break;
 		case 1:
 			errorSim.getOutputWindow().append(s + "\n");
+			errorSim.takeInput(s);
 			break;
 		case 2:
 			server.getOutputWindow().append(s + "\n");
+			server.takeInput(s);
 			break;
 		}
 	}

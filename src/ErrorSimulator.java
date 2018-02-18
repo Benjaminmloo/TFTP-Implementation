@@ -15,6 +15,7 @@ public class ErrorSimulator extends TFTPConnection {
 	//	Class Variable definition start
 	private DatagramSocket eSimSocket, mediatorSocket;
 	private SocketAddress clientAddress, serverAddress;
+	private String input;
 	//	Class Variable definition finish
 	
 	private int eSimPort, serverPort = 69;
@@ -107,6 +108,11 @@ public class ErrorSimulator extends TFTPConnection {
 			send(responsePacket.getData(), mediatorSocket, clientAddress);
 			mediateTransfer();
 		}
+	}
+
+	@Override
+	public void takeInput(String s) {
+		input += s;
 	}
 
 	/**

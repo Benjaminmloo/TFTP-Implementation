@@ -1,6 +1,5 @@
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.util.InputMismatchException;
 import java.util.Scanner;
 
 /**
@@ -12,6 +11,7 @@ public class Server extends TFTPConnection {
 	
 	//	Class Variable definition start
 	private WaitForRequest waitThread;
+	private String input = "";
 	boolean cont = true;
 
 	/**
@@ -51,6 +51,61 @@ public class Server extends TFTPConnection {
 	 * 
 	 * @author bloo
 	 */
+
+	public synchronized void userInterface() {
+		Scanner n = new Scanner(input);
+		byte operation;
+
+		while (cont) {
+			while (true) { // get transfer type
+				try {
+					print("settings(1), quit(2): ");
+					while(input == null) {
+						try {
+							wait();
+						}catch(InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+					operation = Byte.valueOf(input);
+					input = null;
+					break;
+				} catch (NumberFormatException e) {
+					println("Invalid input!");
+					input = null;
+				}
+
+			}
+
+			if (operation == 1) {
+				while (true) { // get transfer mode
+					try {
+						print("Verbose mode (true/false): ");
+						while(input == null) {
+							try {
+								wait();
+							}catch(InterruptedException e) {
+								e.printStackTrace();
+							}
+						}
+						verbose = Boolean.valueOf(input);
+						input = null;
+						break;
+					} catch (NumberFormatException e) {
+						println("Invalid input!");
+						input = null;
+					}
+				}
+
+			} else if (operation == 2) {
+				cont = false;
+				waitThread.interrupt();
+			} else {
+				println("Invalid input! enter 1 or 2");
+			}
+		}
+		n.close();
+	}
 	
 	// For Testing Purposes
 	public int getWaitForRequest() {
@@ -84,13 +139,13 @@ public class Server extends TFTPConnection {
 
 		// Testing Purposes
 		public int getDatagramSoc() {
-			System.out.println(" JUnit Test: " + requestSocket.getLocalPort());
+			println(" JUnit Test: " + requestSocket.getLocalPort());
 			return requestSocket.getLocalPort();
 		}
 		
 		@Override
 		public void run() {
-			System.out.println("waiting");
+			println("waiting");
 			while (cont) {
 				try {
 					receivedPacket = receive(requestSocket); // wait for new request packet
@@ -111,55 +166,12 @@ public class Server extends TFTPConnection {
 			requestSocket.close();
 		}
 	}
-	
-	/**
-	 * methods the manages packet being received
-	 * 
-	 * sends any received packets to be processed by another method
-	 * 
-	 * @param threaded
-	 *            flag to determine whether or not to use threads to wait for
-	 *            request
-	 * 
-	 * @author bloo
-	 */
-	void userInterface() {
-		Scanner n = new Scanner(System.in);
-		byte operation;
 
-		while (cont) {
-			while (true) {
-				try {
-					System.out.print("settings(1), quit(2): ");
-					operation = n.nextByte();
-					break;
-				} catch (InputMismatchException e) {
-					System.out.println("Invalid input!");
-					n.next();
-				}
 
-			}
-
-			//Turns on verbose or exits server
-			if (operation == 1) 
-				while (true) {
-					try {
-						System.out.print("Verbose mode (true/false): ");
-						verbose = n.nextBoolean();
-						break;
-					} catch (InputMismatchException e) {
-						System.out.println("Invalid input!");
-						n.next();
-					}
-
-			} else if (operation == 2) {
-				cont = false;
-				waitThread.interrupt();
-			} else 
-				System.out.println("Invalid input! enter 1 or 2");
-		}
-
-		n.close();
+	@Override
+	public synchronized void takeInput(String s) {
+		input = s;
+		notifyAll();
 	}
 
 	/**

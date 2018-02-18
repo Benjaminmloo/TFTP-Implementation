@@ -68,7 +68,11 @@ public abstract class TFTPConnection {
 				return new DatagramSocket();
 			} catch (SocketException e) {
 				e.printStackTrace();
-				;
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
 			}
 		}
 	}
@@ -81,14 +85,16 @@ public abstract class TFTPConnection {
 	 * @return the socket requested
 	 */
 	protected DatagramSocket waitForSocket(int port) {
-		if (verbose)
-			System.out.println("Getting Socket on port: " + port);
 		while (true) {
 			try {
 				return new DatagramSocket(port);
 			} catch (SocketException e) {
 				e.printStackTrace();
-				System.exit(1);
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
 			}
 		}
 	}
@@ -129,15 +135,15 @@ public abstract class TFTPConnection {
 			ackPacket = receive(socket);
 			
 			if(getType(ackPacket) == OP_ERROR) {
-				System.err.println("ERROR: " + getErrorMsg(ackPacket));
+				System.err.println("\nError Occured\n" + packetToString(ackPacket));
 				return;
 			}if(getType(ackPacket) != OP_ACK) {
-				System.out.println("Received packet was not expected");
+				println("\nReceived packet was not expected");
 				throw new IllegalArgumentException();
 			}
 
 			if (getBlockNum(ackPacket) != i) {
-				System.out.println("ACK for a different Block!");
+				println("\nACK for a different Block!");
 				throw new IllegalArgumentException();
 			}
 		}
@@ -177,7 +183,7 @@ public abstract class TFTPConnection {
 			data.add(getByteData(packet));
 			send(createAck(1), socket, returnAddress);
 		}else if(getType(packet) == OP_ERROR) {
-			System.err.println("ERROR: " + getErrorMsg(packet));
+			System.err.println("\\nError Occured\\n" + getErrorMsg(packet));
 			return;
 		}
 
@@ -246,8 +252,8 @@ public abstract class TFTPConnection {
 	protected void send(DatagramSocket socket, DatagramPacket sendPacket) {
 		try {
 			if (verbose) {
-				System.out.println("Sending: ");
-				System.out.println(packetToString(sendPacket));
+				println("Sending: ");
+				println(packetToString(sendPacket));
 			}
 
 			socket.send(sendPacket);
@@ -294,8 +300,8 @@ public abstract class TFTPConnection {
 			socket.receive(receivedPacket);
 
 			if (verbose) {
-				System.out.println("Received:");
-				System.out.println(packetToString(receivedPacket));
+				println("Received:");
+				println(packetToString(receivedPacket));
 			}
 			return receivedPacket;
 		} catch (SocketException se) {
@@ -611,6 +617,18 @@ public abstract class TFTPConnection {
 		this.outputWindow.append(s);
 	}
 	
+	/**
+	 * @author Benjamin
+	 * Prints to UI and console
+	 * 
+	 * @param s
+	 */
+	public void println(String s)
+	{
+		System.out.println(s + "\n");
+		this.outputWindow.append(s + "\n");
+	}
+	
 	public abstract void takeInput(String s);
 
 	/**
@@ -637,7 +655,7 @@ public abstract class TFTPConnection {
 				} else if (getType(packet) == OP_ACK) {
 					descriptor += "ACK\nBlock #: " + getBlockNum(packet) + "\n";
 				} else if (getType(packet) == OP_ERROR) {
-					descriptor += "ERROR\nError Code" + getBlockNum(packet) + "\nErrMsg: " + getError(packet) + "\n";
+					descriptor += "ERROR\nError Num: " + getError(packet) + "\nError Msg: " + getErrorMsg(packet) + "\n";
 				}
 			}
 
