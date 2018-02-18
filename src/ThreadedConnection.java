@@ -61,32 +61,31 @@ public class ThreadedConnection extends TFTPConnection implements Runnable {
 			switch (request) {
 			/* Read Request */
 			case 1:
-				if(verbose)System.out.println("Handleing rrq");
+				if(verbose)println("Handleing rrq");
 
 				if(!Files.exists(Paths.get(fileName)))
-					throw new FileNotFoundException("File " + fileName+" not found"); //verify existence of file before operation
-				else
-					System.out.println("file contents: " + Files.readAllLines(Paths.get(fileName)));
+					throw new FileNotFoundException("File \"" + fileName + "\" not found"); //verify existence of file before operation
 				sendFile(packet, handlerSocket);
 				break;
 
 			/* Write Request */
 			case 2:
 				// Respond with ACK block 0
-				if(verbose)System.out.println("Handleing wrq");
-				
+				if(verbose)println("Handleing wrq");
+				if(!Files.exists(Paths.get(fileName)))
+					throw new FileNotFoundException("File \"" + fileName + "\" not found"); //verify existence of file before operation
 				send(createAck(0), handlerSocket, packet.getSocketAddress());
 				receiveFile(packet, handlerSocket, fileName);
 				break;
 
 			/* Data */
 			case 3:
-				System.out.println("Received out of time DATA packet");
+				println("Received out of time DATA packet");
 				break;
 
 			/* Acknowledge */
 			case 4:
-				System.out.println("Received out of time ACK packet");
+				println("Received out of time ACK packet");
 				break;
 
 			/* Error */
@@ -120,7 +119,7 @@ public class ThreadedConnection extends TFTPConnection implements Runnable {
 	@Override
 	public void run() {
 		if (verbose)
-			System.out.println("starting new connection");
+			println("starting new connection");
 		requestHandler(requestPacket);
 	}
 
