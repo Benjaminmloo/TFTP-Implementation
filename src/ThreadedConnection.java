@@ -5,8 +5,11 @@ import java.net.DatagramSocket;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
+
+import javax.activity.InvalidActivityException;
 
 public class ThreadedConnection extends TFTPConnection implements Runnable {
 
@@ -93,7 +96,7 @@ public class ThreadedConnection extends TFTPConnection implements Runnable {
 				/* Currently does nothing */
 				break;
 			}
-		}catch(FileNotFoundException | NoSuchFileException e){
+		}catch(FileNotFoundException | NoSuchFileException | InvalidPathException e){
 			send(createError(1, e.getMessage().getBytes()), handlerSocket, packet.getSocketAddress());
 		}catch(AccessDeniedException e){
 			send(createError(2, e.getMessage().getBytes()), handlerSocket, packet.getSocketAddress());
