@@ -182,6 +182,11 @@ public abstract class TFTPConnection {
 		if (getType(packet) == OP_DATA) { // if the initial packet is a data packet
 			data.add(getByteData(packet));
 			send(createAck(1), socket, returnAddress);
+			if(getDataLength(packet) != STD_DATA_SIZE - 4) {
+				saveFile(data, file);
+				return;
+			}
+				
 		}else if(getType(packet) == OP_ERROR) {
 			System.err.println("\\nError Occured\\n" + getErrorMsg(packet));
 			return;
@@ -583,7 +588,7 @@ public abstract class TFTPConnection {
 	 */
 	protected int saveFile(ArrayList<byte[]> data, String fileName) throws IOException {
 		if(new File(fileName).getUsableSpace() < data.size() * 512)
-			throw new FullFileSystemException("File " + fileName + "cannot fit the file's " + data.size() * 512 + "bytes.");
+			throw new FullFileSystemException("File " + fileName + "cannot fit the file's " + data.size() * 512 + "bytes. File has space " + new File(fileName).getUsableSpace());
 		OutputStream file = new FileOutputStream(fileName);
 
 		for (int i = 0; i < data.size(); i++) {
