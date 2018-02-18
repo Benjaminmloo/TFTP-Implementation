@@ -51,44 +51,7 @@ public class Server extends TFTPConnection {
 	 * 
 	 * @author bloo
 	 */
-
-	void userInterface() {
-		Scanner n = new Scanner(System.in);
-		byte operation;
-
-		while (cont) {
-			while (true) { // get transfer type
-				try {
-					this.outputWindow.append("settings(1), quit(2): ");
-					System.out.print("settings(1), quit(2): ");
-					operation = n.nextByte();
-					break;
-				} catch (InputMismatchException e) {
-					System.out.println("Invalid input!");
-					n.next();
-				}
-
-			}
-
-			if (operation == 1) {
-				while (true) { // get transfer mode
-					try {
-						System.out.print("Verbose mode (true/false): ");
-						verbose = n.nextBoolean();
-
-						break;
-					} catch (InputMismatchException e) {
-						System.out.println("Invalid input!");
-						n.next();
-					}
-				}
-
-			} else if (operation == 2) {
-				cont = false;
-				waitThread.interrupt();
-			} else {
-				System.out.println("Invalid input! enter 1 or 2");
-			}
+	
 	// For Testing Purposes
 	public int getWaitForRequest() {
 		if(waitThread.getDatagramSoc() == SERVER_PORT) {
