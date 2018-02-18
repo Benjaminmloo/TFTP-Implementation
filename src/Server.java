@@ -9,26 +9,11 @@ import java.util.Scanner;
  */
 public class Server extends TFTPConnection {
 	
-<<<<<<< HEAD
-	/*
-	 * File transferred in 512-byte blocks, 1 block per packet transfer. Block < 512
-	 * bytes terminates transfer Packet types: RRQ, WRQ, DATA, ACK, ERROR
-	 * TID(transfer ID) Client gets random TID when a request is prepared, when a
-	 * server grants a request it also gets a random TID Source and destination TID
-	 * associated with every packet but not stored in the packet, used asDel
-	 * source/destination ports for UDP Write: Client WRQ -> Server ACK Block 0 ->
-	 * Client Data Block 1 -> Server ACK Block 1 -> Client Data Block 2 -> etc...
-	 * Server ACK Block n Read: Client RRQ -> Server Data Block 1 -> Client ACK
-	 * Block 1 -> Server Data Block 2 -> etc... Client ACK Block n RRQ acknowledged
-	 * with DATA, WRQ by ACK
-	 */
-=======
+	
 	//	Class Variable definition start
->>>>>>> refs/remotes/origin/master
 	private WaitForRequest waitThread;
 	boolean cont = true;
-	//	Class Variable definition finish
-	
+
 	/**
 	 * Constructor for a Server
 	 * 
@@ -55,7 +40,6 @@ public class Server extends TFTPConnection {
 		this(serverPort, true);
 	}
 
-<<<<<<< HEAD
 	/**
 	 * methods the manages packet being received
 	 * 
@@ -105,12 +89,10 @@ public class Server extends TFTPConnection {
 			} else {
 				System.out.println("Invalid input! enter 1 or 2");
 			}
-=======
 	// For Testing Purposes
 	public int getWaitForRequest() {
 		if(waitThread.getDatagramSoc() == SERVER_PORT) {
 			return waitThread.getDatagramSoc();
->>>>>>> refs/remotes/origin/master
 		}
 		return 0;
 	}
