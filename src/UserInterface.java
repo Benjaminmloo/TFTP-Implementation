@@ -11,6 +11,11 @@ import java.io.PrintStream;
 
 import javax.swing.*;
 
+/**
+ * 
+ * @author Benjamin
+ *
+ */
 public class UserInterface {
 	
 	private JFrame frame;

@@ -1,4 +1,5 @@
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -23,6 +24,8 @@ import javax.swing.JTextArea;
  *
  */
 public abstract class TFTPConnection {
+	
+	//	Class Variable definition start
 	protected boolean verbose;
 	protected JTextArea outputWindow =  new JTextArea();
 
@@ -41,7 +44,8 @@ public abstract class TFTPConnection {
 	protected static final byte OP_DATA = 3;
 	protected static final byte OP_ACK = 4;
 	protected static final byte OP_ERROR = 5;
-
+	//	Class Variable definition end
+	
 	protected static Map<Byte, String> PacketTypes;
 	static {
 		PacketTypes = new HashMap<>();
@@ -59,8 +63,6 @@ public abstract class TFTPConnection {
 	 * @return a usable socket
 	 */
 	protected DatagramSocket waitForSocket() {
-		if (verbose)
-			System.out.println("Getting Socket");
 		while (true) {
 			try {
 				return new DatagramSocket();
@@ -119,14 +121,18 @@ public abstract class TFTPConnection {
 	 */
 	protected void sendFile(ArrayList<byte[]> data, SocketAddress recipientAddress, DatagramSocket socket)
 			throws IllegalArgumentException {
-
+		DatagramPacket ackPacket;
 		for (int i = 1; i <= data.size(); i++) {
 			byte sendData[] = data.get(i - 1);
 			this.send(createData(i, sendData), socket, recipientAddress);
 
-			DatagramPacket ackPacket = receive(socket);
-			if (this.getType(ackPacket) != 4) {
-				System.out.println("Not an ACK packet!");
+			ackPacket = receive(socket);
+			
+			if(getType(ackPacket) == OP_ERROR) {
+				System.err.println("ERROR: " + getErrorMsg(ackPacket));
+				return;
+			}if(getType(ackPacket) != OP_ACK) {
+				System.out.println("Received packet was not expected");
 				throw new IllegalArgumentException();
 			}
 
@@ -135,17 +141,6 @@ public abstract class TFTPConnection {
 				throw new IllegalArgumentException();
 			}
 		}
-		socket.close();
-
-		/*
-		 * List of byte arrays of max size 512 = Call parser here
-		 * 
-		 */
-
-		/*
-		 * LOOP this.send( 1st array, packet.getSocketAddress); Wait for ACK...
-		 * this.send( 2nd array, packet.getSocketAddress); Wait for ACK etc...
-		 */
 	}
 
 	/**
@@ -158,7 +153,7 @@ public abstract class TFTPConnection {
 	 * @param file
 	 *            - the file path where the file will be saced
 	 */
-	protected void receiveFile(DatagramSocket socket, String file) {
+	protected void receiveFile(DatagramSocket socket, String file) throws IOException{
 		receiveFile(receive(socket), socket, file);
 	}
 
@@ -173,7 +168,7 @@ public abstract class TFTPConnection {
 	 * @param file
 	 *            - where the received file will be stored
 	 */
-	protected void receiveFile(DatagramPacket packet, DatagramSocket socket, String file) {
+	protected void receiveFile(DatagramPacket packet, DatagramSocket socket, String file) throws IOException{
 		ArrayList<byte[]> data = new ArrayList<byte[]>();
 		SocketAddress returnAddress = packet.getSocketAddress();
 		DatagramPacket newPacket;
@@ -181,53 +176,26 @@ public abstract class TFTPConnection {
 		if (getType(packet) == OP_DATA) { // if the initial packet is a data packet
 			data.add(getByteData(packet));
 			send(createAck(1), socket, returnAddress);
+		}else if(getType(packet) == OP_ERROR) {
+			System.err.println("ERROR: " + getErrorMsg(packet));
+			return;
 		}
 
 		do {
 			newPacket = receive(socket);
-
-			data.add(getByteData(newPacket));
-			send(createAck(getBlockNum(newPacket)), socket, returnAddress); // send ack to the client
-		} while (getDataLength(newPacket) == STD_DATA_SIZE - 4); // continue while the packets are full
-		socket.close();
-		try {
-			saveFile(data, file);
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-	}
-
-	/**
-	 * Base Send method
-	 * 
-	 * Sends byte[] msg to the returnAddress
-	 * 
-	 * @param msg
-	 * @param returnAddress
-	 * 
-	 * @author bloo
-	 */
-	protected void send(byte[] msg, SocketAddress returnAddress) {
-		DatagramSocket socket;
-		DatagramPacket sendPacket;
-		try {
-			socket = new DatagramSocket();
-
-			sendPacket = new DatagramPacket(msg, msg.length, returnAddress);
-
-			if (verbose) {
-				System.out.println("Sending:");
-				System.out.println(packetToString(sendPacket));
+			
+			if (getType(newPacket) == OP_DATA) {
+				data.add(getByteData(newPacket));
+				send(createAck(getBlockNum(newPacket)), socket, returnAddress);
+			}else if(getType(newPacket) == OP_ERROR) {
+				System.err.println("ERROR: " + getErrorMsg(newPacket));
+				return;
+			}else{
+				return;
 			}
-
-			socket.send(sendPacket);
-			socket.close();
-
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
+			
+		} while (getDataLength(newPacket) == STD_DATA_SIZE - 4); // continue while the packets are full
+		saveFile(data, file);
 	}
 
 	/**
@@ -243,22 +211,7 @@ public abstract class TFTPConnection {
 	 * @author bloo
 	 */
 	protected void send(byte[] msg, DatagramSocket socket, SocketAddress returnAddress) {
-		DatagramPacket sendPacket;
-		try {
-
-			sendPacket = new DatagramPacket(msg, msg.length, returnAddress);
-
-			if (verbose) {
-				System.out.println("Sending: ");
-				System.out.println(packetToString(sendPacket));
-			}
-
-			socket.send(sendPacket);
-
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
+		send(socket, new DatagramPacket(msg, msg.length, returnAddress));
 	}
 
 	/**
@@ -301,7 +254,6 @@ public abstract class TFTPConnection {
 
 		} catch (IOException e) {
 			socket.close();
-			socket.close();
 			e.printStackTrace();
 			System.exit(1);
 		}
@@ -318,7 +270,7 @@ public abstract class TFTPConnection {
 	 * 
 	 * @author bloo
 	 */
-	DatagramPacket receive(DatagramSocket socket) {
+	protected DatagramPacket receive(DatagramSocket socket) {
 		return receive(socket, 516);
 	}
 
@@ -333,7 +285,7 @@ public abstract class TFTPConnection {
 	 * 
 	 * @author bloo
 	 */
-	DatagramPacket receive(DatagramSocket socket, int length) {
+	protected DatagramPacket receive(DatagramSocket socket, int length) {
 		DatagramPacket receivedPacket;
 
 		receivedPacket = new DatagramPacket(new byte[length], length);
@@ -427,7 +379,7 @@ public abstract class TFTPConnection {
 	protected byte[] createError(int error, byte[] msg) {
 		byte[] packet = new byte[4 + msg.length];
 		ByteBuffer dBuff = ByteBuffer.wrap(packet);
-		dBuff.put(new byte[] { 0, 3, (byte) (error / 256), (byte) (error % 256) });
+		dBuff.put(new byte[] { 0, 5, (byte) (error / 256), (byte) (error % 256) });
 		dBuff.put(msg);
 		return packet;
 	}
@@ -624,6 +576,8 @@ public abstract class TFTPConnection {
 	 * @author Eric
 	 */
 	protected int saveFile(ArrayList<byte[]> data, String fileName) throws IOException {
+		if(new File(fileName).getUsableSpace() < data.size() * 512)
+			throw new FullFileSystemException("File " + fileName + "cannot fit the file's " + data.size() * 512 + "bytes.");
 		OutputStream file = new FileOutputStream(fileName);
 
 		for (int i = 0; i < data.size(); i++) {
@@ -683,7 +637,7 @@ public abstract class TFTPConnection {
 				} else if (getType(packet) == OP_ACK) {
 					descriptor += "ACK\nBlock #: " + getBlockNum(packet) + "\n";
 				} else if (getType(packet) == OP_ERROR) {
-					descriptor += "ERROR\nError Code" + getBlockNum(packet) + "ErrMsg: " + getError(packet) + "\n";
+					descriptor += "ERROR\nError Code" + getBlockNum(packet) + "\nErrMsg: " + getError(packet) + "\n";
 				}
 			}
 
@@ -691,5 +645,13 @@ public abstract class TFTPConnection {
 		}
 
 		return null;
+	}
+	
+	protected class FullFileSystemException extends IOException{
+		private static final long serialVersionUID = 7770593212561838179L;
+
+		FullFileSystemException(String msg){
+			super(msg);
+		}
 	}
 }

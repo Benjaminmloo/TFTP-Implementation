@@ -9,6 +9,7 @@ import java.util.Scanner;
  */
 public class Server extends TFTPConnection {
 	
+<<<<<<< HEAD
 	/*
 	 * File transferred in 512-byte blocks, 1 block per packet transfer. Block < 512
 	 * bytes terminates transfer Packet types: RRQ, WRQ, DATA, ACK, ERROR
@@ -21,9 +22,13 @@ public class Server extends TFTPConnection {
 	 * Block 1 -> Server Data Block 2 -> etc... Client ACK Block n RRQ acknowledged
 	 * with DATA, WRQ by ACK
 	 */
+=======
+	//	Class Variable definition start
+>>>>>>> refs/remotes/origin/master
 	private WaitForRequest waitThread;
 	boolean cont = true;
-
+	//	Class Variable definition finish
+	
 	/**
 	 * Constructor for a Server
 	 * 
@@ -33,7 +38,7 @@ public class Server extends TFTPConnection {
 	 *            - whether or not the server will be verbose
 	 * @author bloo
 	 */
-	Server(int serverPort, boolean verbose) {
+	public Server(int serverPort, boolean verbose) {
 		this.verbose = verbose;
 		waitThread = new WaitForRequest(waitForSocket(serverPort));
 		waitThread.start();
@@ -46,10 +51,11 @@ public class Server extends TFTPConnection {
 	 *            - port for server to receive requests from
 	 * @author bloo
 	 */
-	Server(int serverPort) {
+	public Server(int serverPort) {
 		this(serverPort, true);
 	}
 
+<<<<<<< HEAD
 	/**
 	 * methods the manages packet being received
 	 * 
@@ -99,11 +105,16 @@ public class Server extends TFTPConnection {
 			} else {
 				System.out.println("Invalid input! enter 1 or 2");
 			}
+=======
+	// For Testing Purposes
+	public int getWaitForRequest() {
+		if(waitThread.getDatagramSoc() == SERVER_PORT) {
+			return waitThread.getDatagramSoc();
+>>>>>>> refs/remotes/origin/master
 		}
-
-		n.close();
+		return 0;
 	}
-
+	
 	/**
 	 * Thread that waits for tftp requests and dipatches Threaded connections to
 	 * handle the requests
@@ -126,6 +137,12 @@ public class Server extends TFTPConnection {
 			requestSocket = socket;
 		}
 
+		// Testing Purposes
+		public int getDatagramSoc() {
+			System.out.println(" JUnit Test: " + requestSocket.getLocalPort());
+			return requestSocket.getLocalPort();
+		}
+		
 		@Override
 		public void run() {
 			System.out.println("waiting");
@@ -148,6 +165,56 @@ public class Server extends TFTPConnection {
 			super.interrupt();
 			requestSocket.close();
 		}
+	}
+	
+	/**
+	 * methods the manages packet being received
+	 * 
+	 * sends any received packets to be processed by another method
+	 * 
+	 * @param threaded
+	 *            flag to determine whether or not to use threads to wait for
+	 *            request
+	 * 
+	 * @author bloo
+	 */
+	void userInterface() {
+		Scanner n = new Scanner(System.in);
+		byte operation;
+
+		while (cont) {
+			while (true) {
+				try {
+					System.out.print("settings(1), quit(2): ");
+					operation = n.nextByte();
+					break;
+				} catch (InputMismatchException e) {
+					System.out.println("Invalid input!");
+					n.next();
+				}
+
+			}
+
+			//Turns on verbose or exits server
+			if (operation == 1) 
+				while (true) {
+					try {
+						System.out.print("Verbose mode (true/false): ");
+						verbose = n.nextBoolean();
+						break;
+					} catch (InputMismatchException e) {
+						System.out.println("Invalid input!");
+						n.next();
+					}
+
+			} else if (operation == 2) {
+				cont = false;
+				waitThread.interrupt();
+			} else 
+				System.out.println("Invalid input! enter 1 or 2");
+		}
+
+		n.close();
 	}
 
 	/**

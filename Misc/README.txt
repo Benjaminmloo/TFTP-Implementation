@@ -3,10 +3,39 @@
 * Project: Design and Implementation of file transfer system based on the TFTP
 * System consist of TFTP client - error - server.
 *
-* @author: Loo Ben, Nguyen Andrew, Morrissette Eric, Palko Ben, Westeinde Johan
+* @author: Loo Ben, Nguyen Andrew, Morrissette Eric, Palko Ben
 * 
 */
 
+*************************************************************************************************
+Feb 17th, 2018
+ITERATION 2
+
+Setup Instruction
+========================================
+Main Classes - SAME
+Testing Classes - Make it runs independently( Without the Client-Server running since it makes its own Mock Server)
+
+Class files: Client, ErrorSimulator, Server, ThreadedConnection, TFTPConnection, User Interface
+clientTest, errorSimulator, serverTest, tftpConnectionTest; .java
+
+Class Updates 
+========================================
+- Added all the Test Classes
+- Checks some methods and connections if ports are passing correctly
+- Some confusion with protocol testing
+- Added some methods to mock test: Client, Server
+
+
+UserInterface
+========================================
+- GUI
+- Have 3 Class shown on one window
+
+
+
+*************************************************************************************************
+Feb 3rd, 2018
 ITERATION 1 w/ ITERATION 0
 
 Setup Instruction
@@ -74,8 +103,7 @@ UDPConnection Class
 
 Contribution
 ========================================
-Loo Ben: Error Simulator, Server, UDPConnection
-Nguyen Andrew: UML, UCM, READ_ME
+Loo Ben: Error Simulator, Server, UDPConnection, TFTPConnection
+Nguyen Andrew: UML, UCM, READ_ME, Testing Classes, Client
 Morrissette Eric: Client, Trello
-Palko Ben: Server, Threaded Connection, Trello
-Westeinde Johan:: Testing
+Palko Ben: Server, Threaded Connection, Trello, UserInterface

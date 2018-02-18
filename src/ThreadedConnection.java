@@ -1,6 +1,12 @@
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 
 public class ThreadedConnection extends TFTPConnection implements Runnable {
 
@@ -50,11 +56,17 @@ public class ThreadedConnection extends TFTPConnection implements Runnable {
 	private void requestHandler(DatagramPacket packet) {
 		byte request = this.getRequest(packet);
 		DatagramSocket handlerSocket = waitForSocket();
+		String fileName = getFileName(packet);
 		try {
 			switch (request) {
 			/* Read Request */
 			case 1:
 				if(verbose)System.out.println("Handleing rrq");
+
+				if(!Files.exists(Paths.get(fileName)))
+					throw new FileNotFoundException("File " + fileName+" not found"); //verify existence of file before operation
+				else
+					System.out.println("file contents: " + Files.readAllLines(Paths.get(fileName)));
 				sendFile(packet, handlerSocket);
 				break;
 
@@ -62,8 +74,9 @@ public class ThreadedConnection extends TFTPConnection implements Runnable {
 			case 2:
 				// Respond with ACK block 0
 				if(verbose)System.out.println("Handleing wrq");
+				
 				send(createAck(0), handlerSocket, packet.getSocketAddress());
-				receiveFile(packet, handlerSocket, getFileName(packet));
+				receiveFile(packet, handlerSocket, fileName);
 				break;
 
 			/* Data */
@@ -81,12 +94,21 @@ public class ThreadedConnection extends TFTPConnection implements Runnable {
 				/* Currently does nothing */
 				break;
 			}
-		} catch (IOException e) {
-			// handle file IO error
+		}catch(FileNotFoundException | NoSuchFileException e){
+			send(createError(1, e.getMessage().getBytes()), handlerSocket, packet.getSocketAddress());
+		}catch(AccessDeniedException e){
+			send(createError(2, e.getMessage().getBytes()), handlerSocket, packet.getSocketAddress());
+		}catch(FullFileSystemException e){
+			send(createError(3, e.getMessage().getBytes()), handlerSocket, packet.getSocketAddress());
+		}catch(FileAlreadyExistsException e){
+			send(createError(6, e.getMessage().getBytes()), handlerSocket, packet.getSocketAddress());
+		}catch (IOException e) {
+			
 			e.printStackTrace();
 			System.exit(1);
 		}
-
+		
+		handlerSocket.close();
 	}
 
 	/**
