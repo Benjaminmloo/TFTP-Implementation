@@ -13,7 +13,8 @@ ITERATION 2
 
 Setup Instruction
 ========================================
-Main Classes - SAME
+To start the program run through the UserInterface class, input is tied to your current tab (Client tab will send client input etc.)
+
 Testing Classes - Make it runs independently( Without the Client-Server running since it makes its own Mock Server)
 
 Class files: Client, ErrorSimulator, Server, ThreadedConnection, TFTPConnection, User Interface
@@ -30,7 +31,7 @@ Class Updates
 UserInterface
 ========================================
 - GUI
-- Have 3 Class shown on one window
+- Have 3 classes, each having it's own tab. Switching between them will also switch the input destination to the respective tabs class
 
 
 
@@ -99,7 +100,6 @@ UDPConnection Class
 - Sends Packet to Port Location
 - Receive Packet from Port Location
 - Packet to String
-
 
 Contribution
 ========================================

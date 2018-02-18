@@ -85,7 +85,7 @@ public class Client extends TFTPConnection {
 	public byte getOperation() {
 		return operation;
 	}
-	
+
 	/**
 	 * Basic UI, gets input from user ** WILL be upgraded in future iterations.
 	 */
