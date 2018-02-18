@@ -45,7 +45,11 @@ public class Client extends TFTPConnection {
 
 			if (requestType == OP_WRQ) {
 				ackPacket = receive(connectionSocket);
-				sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
+				if(getType(ackPacket) == OP_ACK) {
+					sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
+				}else if(getType(ackPacket) == OP_ERROR) {
+						System.err.println(packetToString(ackPacket)); //if the error packet hasn't already been printed
+				}
 			} else if (requestType == OP_RRQ) {
 				receiveFile(connectionSocket, localFile);
 			}
@@ -53,6 +57,9 @@ public class Client extends TFTPConnection {
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 			System.exit(1);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
