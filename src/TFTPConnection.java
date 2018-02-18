@@ -634,10 +634,30 @@ public abstract class TFTPConnection {
 		return data.size();
 	}
 	
+	/**
+	 * @author Benjamin
+	 * Gets textarea attached to child
+	 * 
+	 * @return
+	 */
 	public JTextArea getOutputWindow()
 	{
 		return this.outputWindow;
 	}
+	
+	/**
+	 * @author Benjamin
+	 * Prints to UI and console
+	 * 
+	 * @param s
+	 */
+	public void print(String s)
+	{
+		System.out.println(s);
+		this.outputWindow.append(s);
+	}
+	
+	public abstract void takeInput(String s);
 
 	/**
 	 * Parses a tftp packet in byte form and returns relevant information

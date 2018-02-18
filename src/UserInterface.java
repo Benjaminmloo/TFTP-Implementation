@@ -30,16 +30,12 @@ public class UserInterface {
 		frame = new JFrame("File Transfer System");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-		
-		
-		
 		tabPane = new JTabbedPane();
 		inputField = new JTextField();
 		inputField.addActionListener(	new InputController(inputField)	);
 		
 		
 		JTextArea clientArea = client.getOutputWindow();
-		clientArea.append("Client output:\n");
 		clientArea.setEditable(false);
 		JScrollPane clientWindow = new JScrollPane(clientArea);
 		clientWindow.setPreferredSize(new Dimension(600, 400));
@@ -48,7 +44,6 @@ public class UserInterface {
 
 		
 		JTextArea errorArea = errorSim.getOutputWindow();
-		errorArea.append("ErrorSim output:\n");
 		errorArea.setEditable(false);
 		JScrollPane errorWindow = new JScrollPane(errorArea);
 		errorWindow.setPreferredSize(new Dimension(600, 400));
@@ -57,7 +52,6 @@ public class UserInterface {
 
 
 		JTextArea serverArea = server.getOutputWindow();
-		serverArea.append("Server output:\n");
 		serverArea.setEditable(false);
 		JScrollPane serverWindow = new JScrollPane(serverArea);
 		serverWindow.setPreferredSize(new Dimension(600, 400));
@@ -89,7 +83,19 @@ public class UserInterface {
 	
 	private void forwardInput(String s)
 	{
-		client.getOutputWindow().append(s + "\n");
+		
+		switch (tabPane.getSelectedIndex())
+		{
+		case 0:
+			client.getOutputWindow().append(s + "\n");
+			break;
+		case 1:
+			errorSim.getOutputWindow().append(s + "\n");
+			break;
+		case 2:
+			server.getOutputWindow().append(s + "\n");
+			break;
+		}
 	}
 	
 	public static void main(String args[])
@@ -117,6 +123,7 @@ public class UserInterface {
 		public void actionPerformed(ActionEvent arg0) {
 			// TODO Auto-generated method stub
 			forwardInput(field.getText());
+			field.setText("");
 		}
 		
 	}

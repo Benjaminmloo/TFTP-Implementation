@@ -101,4 +101,10 @@ public class ThreadedConnection extends TFTPConnection implements Runnable {
 			System.out.println("starting new connection");
 		requestHandler(requestPacket);
 	}
+
+	@Override
+	public void takeInput(String s) {
+		// TODO Auto-generated method stub
+		
+	}
 }

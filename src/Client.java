@@ -80,8 +80,9 @@ public class Client extends TFTPConnection {
 			//
 			while (true) {
 				try {
-					this.outputWindow.append("RRQ(1), WRQ(2), settings(3), quit(4): ");
-					System.out.print("RRQ(1), WRQ(2), settings(3), quit(4): ");
+					this.print("RRQ(1), WRQ(2), settings(3), quit(4): ");
+					//this.outputWindow.append("RRQ(1), WRQ(2), settings(3), quit(4): ");
+					//System.out.print("RRQ(1), WRQ(2), settings(3), quit(4): ");
 					operation = n.nextByte();
 					break;
 				} catch (InputMismatchException e) {
