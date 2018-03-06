@@ -11,7 +11,7 @@ public class Server extends TFTPConnection {
 	
 	//	Class Variable definition start
 	private WaitForRequest waitThread;
-	private String input = "";
+	private String input;
 	boolean cont = true;
 
 	/**
@@ -24,6 +24,7 @@ public class Server extends TFTPConnection {
 	 * @author bloo
 	 */
 	public Server(int serverPort, boolean verbose) {
+		this.input = null;
 		this.verbose = verbose;
 		waitThread = new WaitForRequest(waitForSocket(serverPort));
 		waitThread.start();
@@ -53,7 +54,6 @@ public class Server extends TFTPConnection {
 	 */
 
 	public synchronized void userInterface() {
-		Scanner n = new Scanner(input);
 		byte operation;
 
 		while (cont) {
@@ -104,7 +104,6 @@ public class Server extends TFTPConnection {
 				println("Invalid input! enter 1 or 2");
 			}
 		}
-		n.close();
 	}
 	
 	// For Testing Purposes
@@ -145,7 +144,6 @@ public class Server extends TFTPConnection {
 		
 		@Override
 		public void run() {
-			println("waiting");
 			while (cont) {
 				try {
 					receivedPacket = receive(requestSocket); // wait for new request packet
