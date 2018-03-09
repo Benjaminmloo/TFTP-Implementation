@@ -20,7 +20,7 @@ import java.util.Map;
 import javax.swing.JTextArea;
 
 /**
- * @author BenjaminP EricM, BenjaminL
+ * @author BenjaminP EricM, BenjaminL, AndrewN
  *
  */
 public abstract class TFTPConnection {
@@ -160,7 +160,7 @@ public abstract class TFTPConnection {
 	 *            - the file path where the file will be saced
 	 */
 	protected void receiveFile(DatagramSocket socket, String file) throws IOException{
-		receiveFile(receive(socket), socket, file);
+		receiveFile(receive(socket), socket, file); // Calls the receiveFile below
 	}
 
 	/**
@@ -321,6 +321,8 @@ public abstract class TFTPConnection {
 
 	/**
 	 * creates request packet
+	 * adding timeout to this method when creating request packet.
+	 * timeout needs to be agreed by both Client and Server.
 	 * 
 	 * @param opCode
 	 *            - either 1 or 2 for read or write request

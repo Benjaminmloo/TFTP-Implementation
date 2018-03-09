@@ -14,10 +14,11 @@ public class Client extends TFTPConnection {
 	//	Test Variable
 	private byte operation;		//	Operation type to be requested
 	private String input;
-
+	private static int retransmit_limit = 3; // Number of times to retransmit a packet due to delay.
 	
 	public Client() {
 		this.verbose = true;
+		
 	}
 
 	/**
@@ -28,6 +29,8 @@ public class Client extends TFTPConnection {
 		ArrayList<byte[]> data = null;
 		DatagramSocket connectionSocket;
 		DatagramPacket ackPacket;
+		boolean packetInOrder; // Check to see if all packets are in order.
+		boolean firstPacketSent = true; // First ACK packets sent, don't resend ACK. default to true.
 
 		if (requestType == OP_WRQ) { // Check if the request was a write operation (2).
 			try {
@@ -38,22 +41,56 @@ public class Client extends TFTPConnection {
 			}
 		}
 		
-		connectionSocket = waitForSocket();
+		connectionSocket = waitForSocket(); // Requests usable socket. If success, new DatagramSocket()
+		
+		// Setting up time to wait for data before timeout and retransmission.
+		try {
+			connectionSocket.setSoTimeout(2000); // 2 seconds
+		} catch(Exception se) {
+			se.printStackTrace();
+			System.exit(1);
+		}
 
 		try {
 			send(createRQ(requestType, serverFile.getBytes(), MODE_OCTET), connectionSocket, InetAddress.getLocalHost(),
 					port);
-
-			if (requestType == OP_WRQ) {
-				ackPacket = receive(connectionSocket);
-				if(getType(ackPacket) == OP_ACK) {
-					sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
-				}else if(getType(ackPacket) == OP_ERROR) {
-						System.err.println("\n" + packetToString(ackPacket)); //if the error packet hasn't already been printed
+			
+			// New input for timeout and retransmission
+			for(int i = 0; i<retransmit_limit; i++) {
+				try {
+					if (requestType == OP_WRQ) {
+						ackPacket = receive(connectionSocket); // Receive a packet using the connection Socket
+						if(getType(ackPacket) == OP_ACK) { // If server has given acknowledge to write
+							sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
+							i = retransmit_limit + 1; // Successful - leave loop
+						}else if(getType(ackPacket) == OP_ERROR) {
+								System.err.println("\n" + packetToString(ackPacket)); //if the error packet hasn't already been printed
+						}
+					} else if (requestType == OP_RRQ) {
+						receiveFile(connectionSocket, localFile);
+						i = retransmit_limit + 1; // Successful - leave loop
+					}
+				} catch(SocketTimeoutException e) {
+					if(i == retransmit_limit -1) {
+						System.out.println("Unresponsive Transit... Please try again. Attempts: " + retransmit_limit);
+						if(firstPacketSent) {
+							if(verbose) System.out.println("\nServer timed out. RRQ resent.\n");
+							// connectionSocket.send();
+						}
+					}
 				}
-			} else if (requestType == OP_RRQ) {
-				receiveFile(connectionSocket, localFile);
 			}
+
+//			if (requestType == OP_WRQ) {
+//				ackPacket = receive(connectionSocket); // Receive a packet using the connection Socket
+//				if(getType(ackPacket) == OP_ACK) { // If server has given acknowledge to write
+//					sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
+//				}else if(getType(ackPacket) == OP_ERROR) {
+//						System.err.println("\n" + packetToString(ackPacket)); //if the error packet hasn't already been printed
+//				}
+//			} else if (requestType == OP_RRQ) {
+//				receiveFile(connectionSocket, localFile);
+//			}
 
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
