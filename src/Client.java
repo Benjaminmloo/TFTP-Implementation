@@ -14,6 +14,8 @@ public class Client extends TFTPConnection {
 	//	Test Variable
 	private byte operation;		//	Operation type to be requested
 	private String input;
+
+	
 	public Client() {
 		this.verbose = true;
 	}
@@ -27,9 +29,9 @@ public class Client extends TFTPConnection {
 		DatagramSocket connectionSocket;
 		DatagramPacket ackPacket;
 
-		if (requestType == OP_WRQ) {
+		if (requestType == OP_WRQ) { // Check if the request was a write operation (2).
 			try {
-				data = readFile(localFile);
+				data = readFile(localFile); // Save localFile to a temp byte array. data will then be used to write to destination.
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -93,7 +95,7 @@ public class Client extends TFTPConnection {
 		String localFile = null, serverFile = null; /* 	localFile: Local file to be written or read 
 														serverFile: File to be read or written on the server	*/
 		boolean cont = true;	
-		int sendPort = ESIM_PORT;	// Error simulator Port #
+		int sendPort = ESIM_PORT;	// Error simulator Port #23
 
 		/*	Continue execution until exit is issued	*/
 		while (cont) {
@@ -117,6 +119,9 @@ public class Client extends TFTPConnection {
 
 			}
 
+			/* Condition 1
+			 * Check whether the input was either a RRQ(1) or WRQ(2)
+			 */
 			if (operation == 1 || operation == 2) {
 				while (true) { // get file name
 
@@ -131,7 +136,6 @@ public class Client extends TFTPConnection {
 						}
 						localFile = input;
 						input = null;
-						
 						break;
 					} catch (InputMismatchException e) {
 						println("Invalid input!");
@@ -160,7 +164,15 @@ public class Client extends TFTPConnection {
 				}
 
 				establishConnection(operation, localFile, serverFile, sendPort);
-			} else if (operation == 3) {
+			}
+			
+			/* Condition 2
+			 * Check whether the input was settings(3)
+			 * Settings consists of modifying the Verbose mode and Test Mode
+			 * 
+			 */
+			else if (operation == 3) {
+				
 				while (true) { // get transfer mode
 					try {
 						print("Verbose mode (true/false): ");
@@ -170,7 +182,7 @@ public class Client extends TFTPConnection {
 							}catch(InterruptedException e) {
 								e.printStackTrace();
 							}
-						}
+						}			
 						verbose = Boolean.valueOf(input);
 						input = null;
 						break;
@@ -192,9 +204,9 @@ public class Client extends TFTPConnection {
 						}
 						
 						if (Boolean.valueOf(input)) {
-							sendPort = ESIM_PORT;
+							sendPort = ESIM_PORT; // Packets are sent through ErrorSimulator to check for any problem
 						} else {
-							sendPort = SERVER_PORT;
+							sendPort = SERVER_PORT; // Packets are sent directly to Server port.
 						}
 						input = null;
 						break;
@@ -204,14 +216,32 @@ public class Client extends TFTPConnection {
 					}
 				}
 
-			} else if (operation == 4) {
+			}
+			
+			/* Condition 3
+			 * Check whether the input was quit(4)
+			 * This will exit the loop/the program by changing "cont" to false
+			 */
+			else if (operation == 4) {
 				cont = false;
-			} else {
+			} 
+			
+			/* Condition 4
+			 * Check whether the input was anything else besides 1,2,3,4
+			 * Nothing will happen and the loop cycles back.
+			 */
+			else {
 				println("Invalid input! enter 1, 2, 3 or 4");
 			}
 		}
+		print("Program is now closing...");
 	}
 
+	/*
+	 * synchronized takeInput
+	 * To ensure that threads are aware of the changes made from other threads.
+	 * This will allow threads to access in an atomic way.
+	 */
 	@Override
 	public synchronized void takeInput(String s) {
 		input = s;
