@@ -10,16 +10,18 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 
 import javax.activity.InvalidActivityException;
+import javax.swing.JTextArea;
 
 public class ThreadedConnection extends TFTPConnection implements Runnable {
 
 	private DatagramPacket requestPacket;
 
-	public ThreadedConnection(DatagramPacket p) {
-		this(p, true);
+	public ThreadedConnection(DatagramPacket p, JTextArea outputWindow) {
+		this(p, true, outputWindow);
 	}
 
-	public ThreadedConnection(DatagramPacket p, boolean verbose) {
+	public ThreadedConnection(DatagramPacket p, boolean verbose, JTextArea outputWindow) {
+		this.outputWindow = outputWindow;
 		this.verbose = verbose;
 		requestPacket = p;
 	}

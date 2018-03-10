@@ -1,5 +1,6 @@
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 /**
@@ -88,7 +89,14 @@ public class Server extends TFTPConnection {
 								e.printStackTrace();
 							}
 						}
-						verbose = Boolean.valueOf(input);
+
+						if(input.equals("1") || input.equals("true") || input.equals("True")) {
+							verbose = true;
+						} else if(input.equals("2") || input.equals("false") || input.equals("False")) {
+							verbose = false;
+						}else {
+							throw new InputMismatchException();
+						}
 						input = null;
 						break;
 					} catch (NumberFormatException e) {
@@ -148,7 +156,7 @@ public class Server extends TFTPConnection {
 				try {
 					receivedPacket = receive(requestSocket); // wait for new request packet
 					if (receivedPacket != null)
-						new Thread(new ThreadedConnection(receivedPacket, verbose)).start(); // start new client
+						new Thread(new ThreadedConnection(receivedPacket, verbose, outputWindow)).start(); // start new client
 																								// connection for the
 					// recently acquired request
 				} catch (IllegalArgumentException e) {
