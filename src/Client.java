@@ -54,11 +54,10 @@ public class Client extends TFTPConnection {
 	public synchronized void userInterface() {
 		String localFile = null, serverFile = null; /* 	localFile: Local file to be written or read 
 														serverFile: File to be read or written on the server	*/
-		boolean cont = true;	
 		int sendPort = ESIM_PORT;	// Error simulator Port #23
 
 		/*	Continue execution until exit is issued	*/
-		while (cont) {
+		while (true) {
 			while (true) {
 				try {
 					this.print("RRQ(1), WRQ(2), settings(3), quit(4): ");
@@ -202,7 +201,7 @@ public class Client extends TFTPConnection {
 			 * This will exit the loop/the program by changing "cont" to false
 			 */
 			else if (operation == 4) {
-				cont = false;
+				break;
 			} 
 			
 			/* Condition 4
@@ -278,17 +277,6 @@ public class Client extends TFTPConnection {
 					}
 				}
 			}
-
-//			if (requestType == OP_WRQ) {
-//				ackPacket = receive(connectionSocket); // Receive a packet using the connection Socket
-//				if(getType(ackPacket) == OP_ACK) { // If server has given acknowledge to write
-//					sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
-//				}else if(getType(ackPacket) == OP_ERROR) {
-//						System.err.println("\n" + packetToString(ackPacket)); //if the error packet hasn't already been printed
-//				}
-//			} else if (requestType == OP_RRQ) {
-//				receiveFile(connectionSocket, localFile);
-//			}
 
 		} catch (UnknownHostException e) {
 			e.printStackTrace();

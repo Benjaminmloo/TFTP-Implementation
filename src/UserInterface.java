@@ -57,15 +57,15 @@ public class UserInterface {
 		serverWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		tabPane.add("Server", serverWindow);
 
-		
-		JPanel panel = new JPanel();
+
+		JPanel inputPanel = new JPanel();
 		
 		GridBagConstraints gbc =  new GridBagConstraints();
-		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-		panel.add(tabPane, gbc);
-		panel.add(new JLabel("Input commands here: "), gbc);
-		panel.add(inputField, gbc);
-		frame.add(panel);
+		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+		inputPanel.add(tabPane, gbc);
+		inputPanel.add(new JLabel("Input commands here: "), gbc);
+		inputPanel.add(inputField, gbc);
+		frame.add(inputPanel);
 		
 		
 		frame.pack();
@@ -82,7 +82,6 @@ public class UserInterface {
 	
 	private void forwardInput(String s)
 	{
-		
 		switch (tabPane.getSelectedIndex())
 		{
 		case 0:
