@@ -70,10 +70,12 @@ public class Server extends TFTPConnection {
 					}
 					operation = Byte.valueOf(input);
 					input = null;
+					notifyAll();
 					break;
 				} catch (NumberFormatException e) {
 					println("Invalid input!");
 					input = null;
+					notifyAll();
 				}
 
 			}
@@ -97,11 +99,14 @@ public class Server extends TFTPConnection {
 						}else {
 							throw new InputMismatchException();
 						}
+						
 						input = null;
+						notifyAll();
 						break;
-					} catch (NumberFormatException e) {
+					} catch (NumberFormatException | InputMismatchException e) {
 						println("Invalid input!");
 						input = null;
+						notifyAll();
 					}
 				}
 
@@ -176,6 +181,14 @@ public class Server extends TFTPConnection {
 
 	@Override
 	public synchronized void takeInput(String s) {
+		while(input != null) {
+			try {
+				wait();
+			}catch(InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
 		input = s;
 		notifyAll();
 	}
