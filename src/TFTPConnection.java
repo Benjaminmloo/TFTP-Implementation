@@ -320,35 +320,6 @@ public abstract class TFTPConnection {
 	}
 
 	/**
-	 * creates request packet
-	 * adding timeout to this method when creating request packet.
-	 * timeout needs to be agreed by both Client and Server.
-	 * 
-	 * @param opCode
-	 *            - either 1 or 2 for read or write request
-	 * @param file
-	 *            - the name of the file the server will be operating on
-	 * @param mode
-	 *            - the mode in which the data will be handeled
-	 * @return the packet in the form of a byte array
-	 */
-	protected byte[] createRQ(byte opCode, byte[] file, byte[] mode) {
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		try {
-			outputStream.write(ZERO_BYTE);
-			outputStream.write(opCode);
-			outputStream.write(file);
-			outputStream.write(ZERO_BYTE);
-			outputStream.write(mode);
-			outputStream.write(ZERO_BYTE);
-
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		return outputStream.toByteArray();
-	}
-
-	/**
 	 * creates acknowledge packet based on given block number
 	 * 
 	 * @param blockNum
@@ -453,8 +424,7 @@ public abstract class TFTPConnection {
 	/**
 	 * Gets the error number from error packet
 	 * 
-	 * @param packet
-	 *            - where data will be extracted
+	 * @param packet - where data will be extracted
 	 * @return Error num
 	 */
 	protected int getError(DatagramPacket packet) {
@@ -464,8 +434,7 @@ public abstract class TFTPConnection {
 	/**
 	 * Gets error msg from error packet
 	 * 
-	 * @param packet
-	 *            - where data will be extracted
+	 * @param packet - where data will be extracted
 	 * @return Error message
 	 */
 	protected String getErrorMsg(DatagramPacket packet) {
@@ -475,8 +444,7 @@ public abstract class TFTPConnection {
 	/**
 	 * Gets block number from ack or data packets
 	 * 
-	 * @param packet
-	 *            - where data will be extracted
+	 * @param packet - where data will be extracted
 	 * @return block number the packet is holding
 	 */
 	protected int getBlockNum(DatagramPacket packet) {
@@ -486,8 +454,7 @@ public abstract class TFTPConnection {
 	/**
 	 * gets the type of packet
 	 * 
-	 * @param packet
-	 *            - where data will be extracted
+	 * @param packet - where data will be extracted
 	 * @return the type of packet
 	 */
 	protected int getType(DatagramPacket packet) {
@@ -497,8 +464,7 @@ public abstract class TFTPConnection {
 	/**
 	 * Gets the number of bytes in the data section of a data packet
 	 * 
-	 * @param packet
-	 *            - where the data will be extracted
+	 * @param packet - where the data will be extracted
 	 * @return number of bytes in the packets data section
 	 */
 	protected int getDataLength(DatagramPacket packet) {

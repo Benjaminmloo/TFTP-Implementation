@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.InputMismatchException;
 
 /**
- * @Author Eric Morrissette, Andrew Nguyen
+ * @Author Eric Morrissette, Andrew Nguyen, Benjamin
  * 
  *         TFTP Client
  */
@@ -20,114 +20,33 @@ public class Client extends TFTPConnection {
 		this.verbose = true;
 		
 	}
-
-	/**
-	 * @author Benjamin, Andrew, Eric
-	 * Establishes either a WRQ or RRQ connection to the server, depending on user
-	 * specification
-	 */
-	public void establishConnection(byte requestType, String localFile, String serverFile, int port) {
-		ArrayList<byte[]> data = null;
-		DatagramSocket connectionSocket;
-		DatagramPacket ackPacket;
-		boolean packetInOrder; // Check to see if all packets are in order.
-		boolean firstPacketSent = true; // First ACK packets sent, don't resend ACK. default to true.
-
-		if (requestType == OP_WRQ) { // Check if the request was a write operation (2).
-			try {
-				data = readFile(localFile); // Save localFile to a temp byte array. data will then be used to write to destination.
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
-		}
-		
-		connectionSocket = waitForSocket(); // Requests usable socket. If success, new DatagramSocket()
-		
-		// Setting up time to wait for data before timeout and retransmission.
-		try {
-			connectionSocket.setSoTimeout(2000); // 2 seconds
-		} catch(Exception se) {
-			se.printStackTrace();
-			System.exit(1);
-		}
-
-		try {
-			send(createRQ(requestType, serverFile.getBytes(), MODE_OCTET), connectionSocket, InetAddress.getLocalHost(),
-					port);
-			
-			// New input for timeout and retransmission
-			// loop begins at 0 and increments as socket times out. Goes up every 2 seconds.
-			// If the data package is successfully transfered, leave loop and continue connection.
-			for(int i = 0; i<retransmit_limit; i++) {
-				try {
-					if (requestType == OP_WRQ) {
-						ackPacket = receive(connectionSocket); // Receive a packet using the connection Socket
-						if(getType(ackPacket) == OP_ACK) { // If server has given acknowledge to write
-							sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
-							i = retransmit_limit + 1; // Successful - leave loop
-						}else if(getType(ackPacket) == OP_ERROR) {
-								System.err.println("\n" + packetToString(ackPacket)); //if the error packet hasn't already been printed
-						}
-					} else if (requestType == OP_RRQ) {
-						receiveFile(connectionSocket, localFile);
-						i = retransmit_limit + 1; // Successful - leave loop
-					}
-				} catch(SocketTimeoutException e) {
-					if(i == retransmit_limit -1) {
-						System.out.println("Unresponsive Transit... Please try again. Attempts: " + retransmit_limit);
-						if(firstPacketSent) {
-							if(verbose) System.out.println("\nServer timed out. RRQ resent.\n");
-							// connectionSocket.send();
-						}
-					}
-				}
-			}
-
-//			if (requestType == OP_WRQ) {
-//				ackPacket = receive(connectionSocket); // Receive a packet using the connection Socket
-//				if(getType(ackPacket) == OP_ACK) { // If server has given acknowledge to write
-//					sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
-//				}else if(getType(ackPacket) == OP_ERROR) {
-//						System.err.println("\n" + packetToString(ackPacket)); //if the error packet hasn't already been printed
-//				}
-//			} else if (requestType == OP_RRQ) {
-//				receiveFile(connectionSocket, localFile);
-//			}
-
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-			System.exit(1);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-	/**
-	 * closes the datagram socket and quits the program
-	 */
-	public void closeConnection(DatagramSocket socket) {
-
-		socket.close();
-		System.exit(1);
-	}
-
-	/**
-	 * For testing purpose - JUnit hard set operation
-	 * @param testSubject
-	 */
-	public void setOperation(byte testSubject) {
-		operation = testSubject;
-	}
 	
 	/**
-	 * For testing purpose - JUnit
+	 * creates request packet
+	 * adding timeout to this method when creating request packet.
+	 * timeout needs to be agreed by both Client and Server.
+	 * 
+	 * @param opCode - either 1 or 2 for read or write request
+	 * @param file - the name of the file the server will be operating on
+	 * @param mode - the mode in which the data will be handeled
+	 * @return the packet in the form of a byte array
 	 */
-	public byte getOperation() {
-		return operation;
-	}
+	protected byte[] createRQ(byte opCode, byte[] file, byte[] mode) {
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		try {
+			outputStream.write(ZERO_BYTE);
+			outputStream.write(opCode);
+			outputStream.write(file);
+			outputStream.write(ZERO_BYTE);
+			outputStream.write(mode);
+			outputStream.write(ZERO_BYTE);
 
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		return outputStream.toByteArray();
+	}
+	
 	/**
 	 * @author Benjamin, Bloo
 	 * Basic UI, gets input from user ** WILL be upgraded in future iterations.
@@ -297,6 +216,97 @@ public class Client extends TFTPConnection {
 		print("Program is now closing...");
 	}
 
+	/**
+	 * @author Benjamin, Andrew, Eric
+	 * Establishes either a WRQ or RRQ connection to the server, depending on user
+	 * specification
+	 */
+	public void establishConnection(byte requestType, String localFile, String serverFile, int port) {
+		ArrayList<byte[]> data = null;
+		DatagramSocket connectionSocket;
+		DatagramPacket ackPacket;
+		boolean packetInOrder; // Check to see if all packets are in order.
+		boolean firstPacketSent = true; // First ACK packets sent, don't resend ACK. default to true.
+
+		if (requestType == OP_WRQ) { // Check if the request was a write operation (2).
+			try {
+				data = readFile(localFile); // Save localFile to a temp byte array. data will then be used to write to destination.
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+		}
+		
+		connectionSocket = waitForSocket(); // Requests usable socket. If success, new DatagramSocket()
+		
+		// Setting up time to wait for data before timeout and retransmission.
+		try {
+			connectionSocket.setSoTimeout(2000); // 2 seconds
+		} catch(Exception se) {
+			se.printStackTrace();
+			System.exit(1);
+		}
+
+		try {
+			send(createRQ(requestType, serverFile.getBytes(), MODE_OCTET), connectionSocket, InetAddress.getLocalHost(),
+					port);
+			
+			// New input for timeout and retransmission
+			// loop begins at 0 and increments as socket times out. Goes up every 2 seconds.
+			// If the data package is successfully transfered, leave loop and continue connection.
+			for(int i = 0; i<retransmit_limit; i++) {
+				try {
+					if (requestType == OP_WRQ) {
+						ackPacket = receive(connectionSocket); // Receive a packet using the connection Socket
+						if(getType(ackPacket) == OP_ACK) { // If server has given acknowledge to write
+							sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
+							i = retransmit_limit + 1; // Successful - leave loop
+						}else if(getType(ackPacket) == OP_ERROR) {
+								System.err.println("\n" + packetToString(ackPacket)); //if the error packet hasn't already been printed
+						}
+					} else if (requestType == OP_RRQ) {
+						receiveFile(connectionSocket, localFile);
+						i = retransmit_limit + 1; // Successful - leave loop
+					}
+				} catch(SocketTimeoutException e) {
+					if(i == retransmit_limit -1) {
+						System.out.println("Unresponsive Transit... Please try again. Attempts: " + retransmit_limit);
+						if(firstPacketSent) {
+							if(verbose) System.out.println("\nServer timed out. RRQ resent.\n");
+							// connectionSocket.send();
+						}
+					}
+				}
+			}
+
+//			if (requestType == OP_WRQ) {
+//				ackPacket = receive(connectionSocket); // Receive a packet using the connection Socket
+//				if(getType(ackPacket) == OP_ACK) { // If server has given acknowledge to write
+//					sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
+//				}else if(getType(ackPacket) == OP_ERROR) {
+//						System.err.println("\n" + packetToString(ackPacket)); //if the error packet hasn't already been printed
+//				}
+//			} else if (requestType == OP_RRQ) {
+//				receiveFile(connectionSocket, localFile);
+//			}
+
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+			System.exit(1);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * closes the datagram socket and quits the program
+	 */
+	public void closeConnection(DatagramSocket socket) {
+		socket.close();
+		System.exit(1);
+	}
+
 	/*
 	 * synchronized takeInput
 	 * To ensure that threads are aware of the changes made from other threads.
@@ -315,10 +325,4 @@ public class Client extends TFTPConnection {
 		input = s;
 		notifyAll();
 	}
-	/*public static void main(String args[]) {
-		Client c = new Client();
-
-		// Get information for file transfer
-		c.userInterface();
-	}*/
 }
