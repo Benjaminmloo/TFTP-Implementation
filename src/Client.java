@@ -31,7 +31,7 @@ public class Client extends TFTPConnection {
 	 * @param mode - the mode in which the data will be handeled
 	 * @return the packet in the form of a byte array
 	 */
-	protected byte[] createRQ(byte opCode, byte[] file, byte[] mode) {
+	public byte[] createRQ(byte opCode, byte[] file, byte[] mode) {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		try {
 			outputStream.write(ZERO_BYTE);
