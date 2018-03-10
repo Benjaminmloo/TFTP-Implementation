@@ -22,6 +22,7 @@ public class Client extends TFTPConnection {
 	}
 
 	/**
+	 * @author Benjamin, Andrew, Eric
 	 * Establishes either a WRQ or RRQ connection to the server, depending on user
 	 * specification
 	 */
@@ -128,6 +129,7 @@ public class Client extends TFTPConnection {
 	}
 
 	/**
+	 * @author Benjamin, Bloo
 	 * Basic UI, gets input from user ** WILL be upgraded in future iterations.
 	 */
 	public synchronized void userInterface() {
