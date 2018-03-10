@@ -152,12 +152,13 @@ public class Client extends TFTPConnection {
 					}
 					operation = Byte.valueOf(input);
 					input = null;
+					notifyAll();
 					break;
 				} catch (NumberFormatException e) {
 					println("Invalid input!");
 					input = null;
+					notifyAll();
 				}
-
 			}
 
 			/* Condition 1
@@ -177,10 +178,12 @@ public class Client extends TFTPConnection {
 						}
 						localFile = input;
 						input = null;
+						notifyAll();
 						break;
 					} catch (InputMismatchException e) {
 						println("Invalid input!");
 						input = null;
+						notifyAll();
 					}
 				}
 
@@ -197,10 +200,12 @@ public class Client extends TFTPConnection {
 						}
 						serverFile = input;
 						input = null;
+						notifyAll();
 						break;
 					} catch (InputMismatchException e) {
 						println("Invalid input!");
 						input = null;
+						notifyAll();
 					}
 				}
 
@@ -223,13 +228,22 @@ public class Client extends TFTPConnection {
 							}catch(InterruptedException e) {
 								e.printStackTrace();
 							}
-						}			
-						verbose = Boolean.valueOf(input);
+						}
+						if(input.equals("1") || input.equals("true") || input.equals("True")) {
+							verbose = true;
+						} else if(input.equals("2") || input.equals("false") || input.equals("False")) {
+							verbose = false;
+						}else {
+							throw new InputMismatchException();
+						}
+						
 						input = null;
+						notifyAll();
 						break;
 					} catch (InputMismatchException e) {
 						println("Invalid input!");
 						input = null;
+						notifyAll();
 					}
 				}
 
@@ -244,16 +258,21 @@ public class Client extends TFTPConnection {
 							}
 						}
 						
-						if (Boolean.valueOf(input)) {
+						if(input.equals("1") || input.equals("true") || input.equals("True")) {
 							sendPort = ESIM_PORT; // Packets are sent through ErrorSimulator to check for any problem
-						} else {
+						} else if(input.equals("2") || input.equals("false") || input.equals("False")) {
 							sendPort = SERVER_PORT; // Packets are sent directly to Server port.
+						}else {
+							throw new InputMismatchException();
 						}
+						
 						input = null;
+						notifyAll();
 						break;
 					} catch (InputMismatchException e) {
 						println("Invalid input!");
 						input = null;
+						notifyAll();
 					}
 				}
 
@@ -285,6 +304,14 @@ public class Client extends TFTPConnection {
 	 */
 	@Override
 	public synchronized void takeInput(String s) {
+		while(input != null) {
+			try {
+				wait();
+			}catch(InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
 		input = s;
 		notifyAll();
 	}
