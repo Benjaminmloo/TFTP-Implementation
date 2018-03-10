@@ -56,6 +56,8 @@ public class Client extends TFTPConnection {
 					port);
 			
 			// New input for timeout and retransmission
+			// loop begins at 0 and increments as socket times out. Goes up every 2 seconds.
+			// If the data package is successfully transfered, leave loop and continue connection.
 			for(int i = 0; i<retransmit_limit; i++) {
 				try {
 					if (requestType == OP_WRQ) {
