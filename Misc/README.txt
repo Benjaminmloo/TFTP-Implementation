@@ -6,6 +6,7 @@
 *
 * @author: Loo Ben, Nguyen Andrew, Morrissette Eric, Palko Ben
 * 
+* (last update: March 10th, 2018)
 */
 
 FILES:
@@ -99,7 +100,7 @@ Class Updates
 
 Diagrams
 ========================================
-- Updated UCM, UML, Timing Diagram (Different Scenario)
+- Updated UCM, UML, Timing Diagram (Different Scenario depending on errors and sorcerer's apprentice bug)
 
 
 

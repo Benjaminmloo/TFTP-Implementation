@@ -1,6 +1,10 @@
+package tftpConnectionTEST;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
+
+import tftpConnection.Server;
+import tftpConnection.TFTPConnection;
 
 class serverTest extends TFTPConnection {
 
