@@ -1,5 +1,6 @@
 /** READ ME FILE
 *
+* SYSC 3303 Group Project
 * Project: Design and Implementation of file transfer system based on the TFTP
 * System consist of TFTP client - error - server.
 *
@@ -7,6 +8,102 @@
 * 
 */
 
+FILES:
+========================================
+
+Source Files:
+src/tftpConnection/Client.java
+src/tftpConnection/ErrorSimulator.java
+src/tftpConnection/Server.java
+src/tftpConnection/TFTPConnection.java
+src/tftpConnection/ThreadedConnection.java
+src/tftpConnection/UserInterface.java
+
+JUnit Test Files;
+src/tftpConnectionTEST/clientTest.java
+src/tftpConnectionTEST/errorSimulatorTest.java
+src/tftpConnectionTEST/serverTest.java
+src/tftpConnectionTEST/tftpConnectionTest.java
+
+
+
+STEP INSTRUCTION:
+========================================
+
+Running the application:
+1. Run the UserInterface class (You don't have to run the classes separately any more).
+	- A new window should open up
+	- It'll ask for input commands
+
+2. Select one of the four input commands (RRQ(1), WRQ(2), settings(3), quit(4)).
+	- If (1) or (2) is selected (continue on to "Step 3").
+	- If (3) is selected (jump to "Step 6").
+	- If (4) is selected, the application is done ("Jump to Step 9").
+
+3. Input file to Read/Write on client (eg: "src\\test.txt").
+	- Press Enter.
+	
+4. Input file destination on server (eg: "Misc\\test.txt").
+	- Press Enter.
+	- Packet should be transferring back and fourth between client and server.
+	- Information will be shown on each class tab in User Interface.
+	- If it's Read, ACK will be sent and server will send DATA back.
+	- If it's Write. Data will be sent and server will send ACK back.
+	
+5. Once it is done, you can start again (Go back to "Step 2").
+
+6. Setting(3) - User Interface will ask for an input for Verbose (eg: "true/false").
+	- If (true), User Interface will show and trace the packets being sent back and fourth.
+	- If (false), file transfer will be hidden.
+	
+7. User Interface will ask for an input for Testing (eg: "true/false").
+	- If (true), the packet will transmit with ErrorSimulator.
+	- If (false), the packet will ignore ErrorSimulator. Client will send and receive directly to/from Server.
+	
+8. User Interface will jump back to the main four input commands (Go back to "Step 2").
+
+9. Close the User Interface Window.
+
+END
+
+
+Running the Test:
+1. First check if computer is running JUnit 4 or JUnit 5.
+
+2. Right click tftpConnectionTEST > Run As > JUnit Test.
+
+3. Testing was done manually.
+
+
+
+UPDATE NOTES:
+========================================
+*************************************************************************************************
+March 10th, 2018
+ITERATION 3
+
+Setup Instruction
+========================================
+To start the program run through the UserInterface class, input is tied to your current tab (Client tab will send client input etc.)
+
+Testing Classes - Make it runs independently( Without the Client-Server running since it makes its own Mock Server)
+
+Class files: Client, ErrorSimulator, Server, ThreadedConnection, TFTPConnection, User Interface
+clientTest, errorSimulator, serverTest, tftpConnectionTest; .java
+
+Class Updates 
+========================================
+- Adding in Network Error Check. (Timeout, Duplicates, Acknowledgement0 Check, Retransmit)
+- Refactor and simplified the classes for better understanding
+- More Testing!!!
+
+Diagrams
+========================================
+- Updated UCM, UML, Timing Diagram (Different Scenario)
+
+
+
+*************************************************************************************************
 *************************************************************************************************
 Feb 17th, 2018
 ITERATION 2
@@ -35,6 +132,7 @@ UserInterface
 
 
 
+*************************************************************************************************
 *************************************************************************************************
 Feb 3rd, 2018
 ITERATION 1 w/ ITERATION 0
