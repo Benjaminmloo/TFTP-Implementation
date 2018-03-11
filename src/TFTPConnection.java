@@ -80,8 +80,7 @@ public abstract class TFTPConnection {
 	/**
 	 * waits a datagram socket on a specied port
 	 * 
-	 * @param port
-	 *            - the port requested for the socket
+	 * @param port - the port requested for the socket
 	 * @return the socket requested
 	 */
 	protected DatagramSocket waitForSocket(int port) {
@@ -102,10 +101,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Sends a file over network over tftp
 	 * 
-	 * @param packet
-	 *            - the initial packet, containing return address and file name
-	 * @param socket
-	 *            - the socket that will be used to send data and receive acks over
+	 * @param packet - the initial packet, containing return address and file name
+	 * @param socket - the socket that will be used to send data and receive acks over
 	 * @throws IOException
 	 */
 	protected void sendFile(DatagramPacket packet, DatagramSocket socket) throws IOException {
@@ -117,12 +114,9 @@ public abstract class TFTPConnection {
 	/**
 	 * sends a file over tftp
 	 * 
-	 * @param data
-	 *            - array list holding data blocks to be sent
-	 * @param recipientAddress
-	 *            - address data is being sent too
-	 * @param socket
-	 *            - The socket the data will be sent over
+	 * @param data - array list holding data blocks to be sent
+	 * @param recipientAddress - address data is being sent too
+	 * @param socket - The socket the data will be sent over
 	 * @throws IllegalArgumentException
 	 */
 	protected void sendFile(ArrayList<byte[]> data, SocketAddress recipientAddress, DatagramSocket socket)
@@ -154,10 +148,8 @@ public abstract class TFTPConnection {
 	 * method receives the read request acknowledge an initial data packet over the
 	 * socket
 	 * 
-	 * @param socket
-	 *            - Socket where communication will take place
-	 * @param file
-	 *            - the file path where the file will be saced
+	 * @param socket - Socket where communication will take place
+	 * @param file - the file path where the file will be saced
 	 */
 	protected void receiveFile(DatagramSocket socket, String file) throws IOException{
 		receiveFile(receive(socket), socket, file); // Calls the receiveFile below
@@ -167,12 +159,9 @@ public abstract class TFTPConnection {
 	 * receives a file in tftp packets. when all packets have been received the data
 	 * is sent to be saved
 	 * 
-	 * @param packet
-	 *            - the initial acknoledge indicating the start of data transfer
-	 * @param socket
-	 *            - the socket used to communicate
-	 * @param file
-	 *            - where the received file will be stored
+	 * @param packet - the initial acknoledge indicating the start of data transfer
+	 * @param socket - the socket used to communicate
+	 * @param file - where the received file will be stored
 	 */
 	protected void receiveFile(DatagramPacket packet, DatagramSocket socket, String file) throws IOException{
 		ArrayList<byte[]> data = new ArrayList<byte[]>();
@@ -212,12 +201,9 @@ public abstract class TFTPConnection {
 	/**
 	 * Sends msg to return address over the given socket
 	 * 
-	 * @param msg
-	 *            - byte array to be sent
-	 * @param socket
-	 *            - socket that will be used to send packet
-	 * @param returnAddress
-	 *            - address the packet will be send too
+	 * @param msg - byte array to be sent
+	 * @param socket - socket that will be used to send packet
+	 * @param returnAddress - address the packet will be send too
 	 * 
 	 * @author bloo
 	 */
@@ -228,14 +214,10 @@ public abstract class TFTPConnection {
 	/**
 	 * creates a packet to be sent by base send() method
 	 * 
-	 * @param msg
-	 *            - byte array to be sent
-	 * @param socket
-	 *            - socket that will be used to send packet
-	 * @param address
-	 *            - address the packet will be send too
-	 * @param port
-	 *            - port the packet will be send too
+	 * @param msg - byte array to be sent
+	 * @param socket - socket that will be used to send packet
+	 * @param address - address the packet will be send too
+	 * @param port - port the packet will be send too
 	 * 
 	 * @author bloo
 	 */
@@ -247,10 +229,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Base send method, used to send sendPacket over given socket
 	 * 
-	 * @param socket
-	 *            - socket the packet will sent over
-	 * @param sendPacket
-	 *            - packet to be sent, includes destination
+	 * @param socket - socket the packet will sent over
+	 * @param sendPacket - packet to be sent, includes destination
 	 * 
 	 * @author bloo
 	 */
@@ -275,8 +255,7 @@ public abstract class TFTPConnection {
 	 * 
 	 * Receives a DatagramPacket over the given socket
 	 * 
-	 * @param socket
-	 *            - socket packet will be received at
+	 * @param socket - socket packet will be received at
 	 * @return receivedPacket unless there is an exception trying to receive
 	 * 
 	 * @author bloo
@@ -288,10 +267,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Base receive method Receives a DatagramPacket over the given socket
 	 * 
-	 * @param socket
-	 *            - socket to receive from
-	 * @param length
-	 *            - size of potential packet
+	 * @param socket - socket to receive from
+	 * @param length - size of potential packet
 	 * @return receivePacket unless there is an exception trying to receive
 	 * 
 	 * @author bloo
@@ -322,8 +299,7 @@ public abstract class TFTPConnection {
 	/**
 	 * creates acknowledge packet based on given block number
 	 * 
-	 * @param blockNum
-	 *            - the current number the packet is acknowledging
+	 * @param blockNum - the current number the packet is acknowledging
 	 * @return byte array with acknowledge data
 	 * @author bloo
 	 */
@@ -335,10 +311,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Creates Data packet
 	 * 
-	 * @param blockNum
-	 *            - the block num of the blcok being sent
-	 * @param data
-	 *            - the data being sent
+	 * @param blockNum - the block num of the blcok being sent
+	 * @param data - the data being sent
 	 * @return packet in the form of a byte array
 	 * @author BLoo
 	 */
@@ -353,10 +327,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Creates error packet
 	 * 
-	 * @param error
-	 *            - the corresponding error number
-	 * @param data
-	 *            - the data being sent
+	 * @param error - the corresponding error number
+	 * @param data - the data being sent
 	 * @return packet in the form of a byte array
 	 * @author BLoo
 	 */
@@ -371,8 +343,7 @@ public abstract class TFTPConnection {
 	/**
 	 * Retreive the data in a packet in the form of a string
 	 * 
-	 * @param packet
-	 *            - the packet the data will be extracted from
+	 * @param packet - the packet the data will be extracted from
 	 * @return the data in the form of a string
 	 * @author BLoo
 	 */
@@ -384,8 +355,7 @@ public abstract class TFTPConnection {
 	/**
 	 * Gets the data from a packet as a byte array
 	 * 
-	 * @param packet
-	 *            - where the data will be extracted from
+	 * @param packet - where the data will be extracted from
 	 * @return the data the packet was holding
 	 */
 	protected byte[] getByteData(DatagramPacket packet) {
@@ -395,8 +365,7 @@ public abstract class TFTPConnection {
 	/**
 	 * Parses a tftp packet in byte form and returns info
 	 * 
-	 * @param packet
-	 *            - where data will be extracted
+	 * @param packet - where data will be extracted
 	 * @return contents of a packet
 	 * @author bloo
 	 */
@@ -407,8 +376,7 @@ public abstract class TFTPConnection {
 	/**
 	 * Gets tftp mode from request packet
 	 * 
-	 * @param packet
-	 *            - where data will be extracted
+	 * @param packet - where data will be extracted
 	 * @return requested mode as a String
 	 */
 	protected String getMode(DatagramPacket packet) {
@@ -475,12 +443,9 @@ public abstract class TFTPConnection {
 	 * Reads bytes from a byte array to terminating zero or to the end of the
 	 * available data.
 	 * 
-	 * @param index
-	 *            - Starting index of the data
-	 * @param packet
-	 *            - byte array of packet data
-	 * @param dataLength
-	 *            - the number of bytes of data
+	 * @param index - Starting index of the data
+	 * @param packet - byte array of packet data
+	 * @param dataLength - the number of bytes of data
 	 * @return resulting String of data
 	 * 
 	 * @author bloo
@@ -518,8 +483,7 @@ public abstract class TFTPConnection {
 	/**
 	 * Split file into 512 byte chunks
 	 *
-	 * @param fileName
-	 *            - file to be split
+	 * @param fileNameb - file to be split
 	 * @return
 	 * @throws IOException
 	 * @author BenjaminP
@@ -546,10 +510,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Saves data blocks to a file
 	 * 
-	 * @param data
-	 *            - an arraylist of byte arrays storing the byte data
-	 * @param fileName
-	 *            - the name of the file where the data will be stored
+	 * @param data - an arraylist of byte arrays storing the byte data
+	 * @param fileName - the name of the file where the data will be stored
 	 * @return the number blocks saved
 	 * @throws IOException
 	 * @author Eric
@@ -607,8 +569,7 @@ public abstract class TFTPConnection {
 	/**
 	 * Parses a tftp packet in byte form and returns relevant information
 	 * 
-	 * @param packet
-	 *            - packet to convert
+	 * @param packet - packet to convert
 	 * @return contents of a packet
 	 * @author bloo
 	 */
