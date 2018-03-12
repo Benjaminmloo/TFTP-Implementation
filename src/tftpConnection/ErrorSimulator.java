@@ -131,11 +131,13 @@ public class ErrorSimulator extends TFTPConnection {
 	}
 
 	/**
-	 * Simulates the loss of a packet 
+	 * Simulates the loss of a packet
 	 * 
-	 * @param packet - Datagram packet to be lost
+	 * @param packet
+	 *            - Datagram packet to be lost
 	 * 
-	 * @param address - data packet address 
+	 * @param address
+	 *            - data packet address
 	 * 
 	 * @author Eric
 	 */
@@ -155,11 +157,13 @@ public class ErrorSimulator extends TFTPConnection {
 	}
 
 	/**
-	 * Simulates the delay of a packet 
+	 * Simulates the delay of a packet
 	 * 
-	 * @param packet - Datagram packet to be lost
+	 * @param packet
+	 *            - Datagram packet to be lost
 	 * 
-	 * @param address - data packet address 
+	 * @param address
+	 *            - data packet address
 	 * 
 	 * @author Eric
 	 */
@@ -176,18 +180,18 @@ public class ErrorSimulator extends TFTPConnection {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-
 		}
-
 		send(packet.getData(), mediatorSocket, address);
 	}
 
 	/**
-	 * Simulates the duplication of a packet 
+	 * Simulates the duplication of a packet
 	 * 
-	 * @param packet - Datagram packet to be lost
+	 * @param packet
+	 *            - Datagram packet to be lost
 	 * 
-	 * @param address - data packet address 
+	 * @param address
+	 *            - data packet address
 	 * 
 	 * @author Eric
 	 */
@@ -198,7 +202,7 @@ public class ErrorSimulator extends TFTPConnection {
 			print("THIS PACKET WILL BE DUPLICATED\n");
 
 			send(packet.getData(), mediatorSocket, address);
-			
+
 			// delay the packet
 			try {
 				Thread.sleep(errorSimDelay);
@@ -206,28 +210,30 @@ public class ErrorSimulator extends TFTPConnection {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
-			
+
 			send(packet.getData(), mediatorSocket, address);
 
-		}
-		else {
+		} else {
 			send(packet.getData(), mediatorSocket, address);
 		}
-		
 
 	}
 
 	/**
 	 * Sets simulation parameters required to simulate errors.
 	 * 
-	 * @param mode - which simulation mode (lose, delay, duplicate)
+	 * @param mode
+	 *            - which simulation mode (lose, delay, duplicate)
 	 * 
-	 * @param block - which block number to (lose, delay, duplicate)
+	 * @param block
+	 *            - which block number to (lose, delay, duplicate)
 	 * 
-	 * @param delay - how long to delay packet transfer, or delay between duplicates sent
+	 * @param delay
+	 *            - how long to delay packet transfer, or delay between duplicates
+	 *            sent
 	 * 
-	 * @param type - which type of packet to error simulate, ie. 4th ACK or 4th DATA?
+	 * @param type
+	 *            - which type of packet to error simulate, ie. 4th ACK or 4th DATA?
 	 * 
 	 * @author Eric
 	 */

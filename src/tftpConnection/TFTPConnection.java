@@ -1,4 +1,5 @@
 package tftpConnection;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -10,6 +11,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -25,10 +27,10 @@ import javax.swing.JTextArea;
  *
  */
 public abstract class TFTPConnection {
-	
-	//	Class Variable definition start
+
+	// Class Variable definition start
 	protected boolean verbose;
-	protected JTextArea outputWindow =  new JTextArea();
+	protected JTextArea outputWindow = new JTextArea();
 
 	protected static final String OCTET = "octet";
 	protected static final String NETASCII = "netascii";
@@ -45,8 +47,11 @@ public abstract class TFTPConnection {
 	protected static final byte OP_DATA = 3;
 	protected static final byte OP_ACK = 4;
 	protected static final byte OP_ERROR = 5;
-	//	Class Variable definition end
-	
+	private static final int receive_limit = 200;
+
+	private DatagramPacket lastSentPkt, lastRcvPkt;
+	// Class Variable definition end
+
 	protected static Map<Byte, String> PacketTypes;
 	static {
 		PacketTypes = new HashMap<>();
@@ -81,7 +86,8 @@ public abstract class TFTPConnection {
 	/**
 	 * waits a datagram socket on a specied port
 	 * 
-	 * @param port - the port requested for the socket
+	 * @param port
+	 *            - the port requested for the socket
 	 * @return the socket requested
 	 */
 	protected DatagramSocket waitForSocket(int port) {
@@ -102,8 +108,10 @@ public abstract class TFTPConnection {
 	/**
 	 * Sends a file over network over tftp
 	 * 
-	 * @param packet - the initial packet, containing return address and file name
-	 * @param socket - the socket that will be used to send data and receive acks over
+	 * @param packet
+	 *            - the initial packet, containing return address and file name
+	 * @param socket
+	 *            - the socket that will be used to send data and receive acks over
 	 * @throws IOException
 	 */
 	protected void sendFile(DatagramPacket packet, DatagramSocket socket) throws IOException {
@@ -115,9 +123,12 @@ public abstract class TFTPConnection {
 	/**
 	 * sends a file over tftp
 	 * 
-	 * @param data - array list holding data blocks to be sent
-	 * @param recipientAddress - address data is being sent too
-	 * @param socket - The socket the data will be sent over
+	 * @param data
+	 *            - array list holding data blocks to be sent
+	 * @param recipientAddress
+	 *            - address data is being sent too
+	 * @param socket
+	 *            - The socket the data will be sent over
 	 * @throws IllegalArgumentException
 	 */
 	protected void sendFile(ArrayList<byte[]> data, SocketAddress recipientAddress, DatagramSocket socket)
@@ -128,11 +139,12 @@ public abstract class TFTPConnection {
 			this.send(createData(i, sendData), socket, recipientAddress);
 
 			ackPacket = receive(socket);
-			
-			if(getType(ackPacket) == OP_ERROR) {
+
+			if (getType(ackPacket) == OP_ERROR) {
 				System.err.println("\nError Occured\n" + packetToString(ackPacket));
 				return;
-			}if(getType(ackPacket) != OP_ACK) {
+			}
+			if (getType(ackPacket) != OP_ACK) {
 				println("\nReceived packet was not expected");
 				throw new IllegalArgumentException();
 			}
@@ -149,10 +161,12 @@ public abstract class TFTPConnection {
 	 * method receives the read request acknowledge an initial data packet over the
 	 * socket
 	 * 
-	 * @param socket - Socket where communication will take place
-	 * @param file - the file path where the file will be saced
+	 * @param socket
+	 *            - Socket where communication will take place
+	 * @param file
+	 *            - the file path where the file will be saced
 	 */
-	protected void receiveFile(DatagramSocket socket, String file) throws IOException{
+	protected void receiveFile(DatagramSocket socket, String file) throws IOException {
 		receiveFile(receive(socket), socket, file); // Calls the receiveFile below
 	}
 
@@ -160,41 +174,48 @@ public abstract class TFTPConnection {
 	 * receives a file in tftp packets. when all packets have been received the data
 	 * is sent to be saved
 	 * 
-	 * @param packet - the initial acknoledge indicating the start of data transfer
-	 * @param socket - the socket used to communicate
-	 * @param file - where the received file will be stored
+	 * @param packet
+	 *            - the initial acknoledge indicating the start of data transfer
+	 * @param socket
+	 *            - the socket used to communicate
+	 * @param file
+	 *            - where the received file will be stored
 	 */
-	protected void receiveFile(DatagramPacket packet, DatagramSocket socket, String file) throws IOException{
+	protected void receiveFile(DatagramPacket packet, DatagramSocket socket, String file) throws IOException {
 		ArrayList<byte[]> data = new ArrayList<byte[]>();
 		SocketAddress returnAddress = packet.getSocketAddress();
 		DatagramPacket newPacket;
 
 		if (getType(packet) == OP_DATA) { // if the initial packet is a data packet
-			data.add(getByteData(packet));
-			send(createAck(1), socket, returnAddress);
-			if(getDataLength(packet) != STD_DATA_SIZE - 4) {
-				saveFile(data, file);
+			if (getBlockNum(packet) == 1) {
+				data.add(getByteData(packet));
+				send(createAck(1), socket, returnAddress);
+				if (getDataLength(packet) != STD_DATA_SIZE - 4) {
+					saveFile(data, file);
+					return;
+				}
+			} else {
 				return;
 			}
-				
-		}else if(getType(packet) == OP_ERROR) {
+
+		} else if (getType(packet) == OP_ERROR) {
 			System.err.println("\\nError Occured\\n" + getErrorMsg(packet));
 			return;
 		}
 
 		do {
 			newPacket = receive(socket);
-			
+
 			if (getType(newPacket) == OP_DATA) {
 				data.add(getByteData(newPacket));
 				send(createAck(getBlockNum(newPacket)), socket, returnAddress);
-			}else if(getType(newPacket) == OP_ERROR) {
+			} else if (getType(newPacket) == OP_ERROR) {
 				System.err.println("ERROR: " + getErrorMsg(newPacket));
 				return;
-			}else{
+			} else {
 				return;
 			}
-			
+
 		} while (getDataLength(newPacket) == STD_DATA_SIZE - 4); // continue while the packets are full
 		saveFile(data, file);
 	}
@@ -202,9 +223,12 @@ public abstract class TFTPConnection {
 	/**
 	 * Sends msg to return address over the given socket
 	 * 
-	 * @param msg - byte array to be sent
-	 * @param socket - socket that will be used to send packet
-	 * @param returnAddress - address the packet will be send too
+	 * @param msg
+	 *            - byte array to be sent
+	 * @param socket
+	 *            - socket that will be used to send packet
+	 * @param returnAddress
+	 *            - address the packet will be send too
 	 * 
 	 * @author bloo
 	 */
@@ -215,23 +239,34 @@ public abstract class TFTPConnection {
 	/**
 	 * creates a packet to be sent by base send() method
 	 * 
-	 * @param msg - byte array to be sent
-	 * @param socket - socket that will be used to send packet
-	 * @param address - address the packet will be send too
-	 * @param port - port the packet will be send too
+	 * @param msg
+	 *            - byte array to be sent
+	 * @param socket
+	 *            - socket that will be used to send packet
+	 * @param address
+	 *            - address the packet will be send too
+	 * @param port
+	 *            - port the packet will be send too
 	 * 
 	 * @author bloo
 	 */
 	protected void send(byte[] msg, DatagramSocket socket, InetAddress address, int port) {
 		DatagramPacket sendPacket = new DatagramPacket(msg, msg.length, address, port);
+
+		for (byte c : sendPacket.getData()) {
+			print(c + "");
+		}
+		println("");
 		send(socket, sendPacket);
 	}
 
 	/**
 	 * Base send method, used to send sendPacket over given socket
 	 * 
-	 * @param socket - socket the packet will sent over
-	 * @param sendPacket - packet to be sent, includes destination
+	 * @param socket
+	 *            - socket the packet will sent over
+	 * @param sendPacket
+	 *            - packet to be sent, includes destination
 	 * 
 	 * @author bloo
 	 */
@@ -256,7 +291,8 @@ public abstract class TFTPConnection {
 	 * 
 	 * Receives a DatagramPacket over the given socket
 	 * 
-	 * @param socket - socket packet will be received at
+	 * @param socket
+	 *            - socket packet will be received at
 	 * @return receivedPacket unless there is an exception trying to receive
 	 * 
 	 * @author bloo
@@ -268,8 +304,10 @@ public abstract class TFTPConnection {
 	/**
 	 * Base receive method Receives a DatagramPacket over the given socket
 	 * 
-	 * @param socket - socket to receive from
-	 * @param length - size of potential packet
+	 * @param socket
+	 *            - socket to receive from
+	 * @param length
+	 *            - size of potential packet
 	 * @return receivePacket unless there is an exception trying to receive
 	 * 
 	 * @author bloo
@@ -280,27 +318,43 @@ public abstract class TFTPConnection {
 		receivedPacket = new DatagramPacket(new byte[length], length);
 
 		try {
-			socket.receive(receivedPacket);
+			while (true) {
+				socket.receive(receivedPacket);
+				//if (getType(receivedPacket) != OP_DATA || !(lastRcvPkt == null ^  (getType(lastRcvPkt) == OP_DATA && getBlockNum(lastRcvPkt) + 1 == getBlockNum(receivedPacket)))){
+					if (verbose) {
+						println("Received:");
+						println(packetToString(receivedPacket));
+					}
 
-			if (verbose) {
-				println("Received:");
-				println(packetToString(receivedPacket));
+					lastRcvPkt = receivedPacket;
+					return receivedPacket;
+
+				//}
 			}
-			return receivedPacket;
-		} catch (SocketException se) {
-			return null;
-
+		} catch (SocketTimeoutException e) {
+			for (int i = 0; i < receive_limit; i++) {
+				try {
+					socket.receive(receivedPacket);
+					break;
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+					System.exit(1);
+				}
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
 		return new DatagramPacket(new byte[0], 0);
+
 	}
 
 	/**
 	 * creates acknowledge packet based on given block number
 	 * 
-	 * @param blockNum - the current number the packet is acknowledging
+	 * @param blockNum
+	 *            - the current number the packet is acknowledging
 	 * @return byte array with acknowledge data
 	 * @author bloo
 	 */
@@ -312,8 +366,10 @@ public abstract class TFTPConnection {
 	/**
 	 * Creates Data packet
 	 * 
-	 * @param blockNum - the block num of the blcok being sent
-	 * @param data - the data being sent
+	 * @param blockNum
+	 *            - the block num of the blcok being sent
+	 * @param data
+	 *            - the data being sent
 	 * @return packet in the form of a byte array
 	 * @author BLoo
 	 */
@@ -328,8 +384,10 @@ public abstract class TFTPConnection {
 	/**
 	 * Creates error packet
 	 * 
-	 * @param error - the corresponding error number
-	 * @param data - the data being sent
+	 * @param error
+	 *            - the corresponding error number
+	 * @param data
+	 *            - the data being sent
 	 * @return packet in the form of a byte array
 	 * @author BLoo
 	 */
@@ -344,7 +402,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Retreive the data in a packet in the form of a string
 	 * 
-	 * @param packet - the packet the data will be extracted from
+	 * @param packet
+	 *            - the packet the data will be extracted from
 	 * @return the data in the form of a string
 	 * @author BLoo
 	 */
@@ -356,7 +415,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Gets the data from a packet as a byte array
 	 * 
-	 * @param packet - where the data will be extracted from
+	 * @param packet
+	 *            - where the data will be extracted from
 	 * @return the data the packet was holding
 	 */
 	protected byte[] getByteData(DatagramPacket packet) {
@@ -366,7 +426,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Parses a tftp packet in byte form and returns info
 	 * 
-	 * @param packet - where data will be extracted
+	 * @param packet
+	 *            - where data will be extracted
 	 * @return contents of a packet
 	 * @author bloo
 	 */
@@ -377,7 +438,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Gets tftp mode from request packet
 	 * 
-	 * @param packet - where data will be extracted
+	 * @param packet
+	 *            - where data will be extracted
 	 * @return requested mode as a String
 	 */
 	protected String getMode(DatagramPacket packet) {
@@ -393,7 +455,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Gets the error number from error packet
 	 * 
-	 * @param packet - where data will be extracted
+	 * @param packet
+	 *            - where data will be extracted
 	 * @return Error num
 	 */
 	protected int getError(DatagramPacket packet) {
@@ -403,7 +466,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Gets error msg from error packet
 	 * 
-	 * @param packet - where data will be extracted
+	 * @param packet
+	 *            - where data will be extracted
 	 * @return Error message
 	 */
 	protected String getErrorMsg(DatagramPacket packet) {
@@ -413,7 +477,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Gets block number from ack or data packets
 	 * 
-	 * @param packet - where data will be extracted
+	 * @param packet
+	 *            - where data will be extracted
 	 * @return block number the packet is holding
 	 */
 	protected int getBlockNum(DatagramPacket packet) {
@@ -423,7 +488,8 @@ public abstract class TFTPConnection {
 	/**
 	 * gets the type of packet
 	 * 
-	 * @param packet - where data will be extracted
+	 * @param packet
+	 *            - where data will be extracted
 	 * @return the type of packet
 	 */
 	protected int getType(DatagramPacket packet) {
@@ -433,7 +499,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Gets the number of bytes in the data section of a data packet
 	 * 
-	 * @param packet - where the data will be extracted
+	 * @param packet
+	 *            - where the data will be extracted
 	 * @return number of bytes in the packets data section
 	 */
 	protected int getDataLength(DatagramPacket packet) {
@@ -444,9 +511,12 @@ public abstract class TFTPConnection {
 	 * Reads bytes from a byte array to terminating zero or to the end of the
 	 * available data.
 	 * 
-	 * @param index - Starting index of the data
-	 * @param packet - byte array of packet data
-	 * @param dataLength - the number of bytes of data
+	 * @param index
+	 *            - Starting index of the data
+	 * @param packet
+	 *            - byte array of packet data
+	 * @param dataLength
+	 *            - the number of bytes of data
 	 * @return resulting String of data
 	 * 
 	 * @author bloo
@@ -484,7 +554,8 @@ public abstract class TFTPConnection {
 	/**
 	 * Split file into 512 byte chunks
 	 *
-	 * @param fileNameb - file to be split
+	 * @param fileNameb
+	 *            - file to be split
 	 * @return
 	 * @throws IOException
 	 * @author BenjaminP
@@ -511,15 +582,18 @@ public abstract class TFTPConnection {
 	/**
 	 * Saves data blocks to a file
 	 * 
-	 * @param data - an arraylist of byte arrays storing the byte data
-	 * @param fileName - the name of the file where the data will be stored
+	 * @param data
+	 *            - an arraylist of byte arrays storing the byte data
+	 * @param fileName
+	 *            - the name of the file where the data will be stored
 	 * @return the number blocks saved
 	 * @throws IOException
 	 * @author Eric
 	 */
 	protected int saveFile(ArrayList<byte[]> data, String fileName) throws IOException {
-		if(new File(fileName).getUsableSpace() < data.size() * 512)
-			throw new FullFileSystemException("File " + fileName + "cannot fit the file's " + data.size() * 512 + "bytes. File has space " + new File(fileName).getUsableSpace());
+		if (new File(fileName).getUsableSpace() < data.size() * 512)
+			throw new FullFileSystemException("File " + fileName + "cannot fit the file's " + data.size() * 512
+					+ "bytes. File has space " + new File(fileName).getUsableSpace());
 		OutputStream file = new FileOutputStream(fileName);
 
 		for (int i = 0; i < data.size(); i++) {
@@ -529,48 +603,43 @@ public abstract class TFTPConnection {
 		file.close();
 		return data.size();
 	}
-	
+
 	/**
-	 * @author Benjamin
-	 * Gets textarea attached to child
+	 * @author Benjamin Gets textarea attached to child
 	 * 
 	 * @return
 	 */
-	public JTextArea getOutputWindow()
-	{
+	public JTextArea getOutputWindow() {
 		return this.outputWindow;
 	}
-	
+
 	/**
-	 * @author Benjamin
-	 * Prints to UI and console
+	 * @author Benjamin Prints to UI and console
 	 * 
 	 * @param s
 	 */
-	public void print(String s)
-	{
+	public void print(String s) {
 		System.out.println(s);
 		this.outputWindow.append(s);
 	}
-	
+
 	/**
-	 * @author Benjamin
-	 * Prints to UI and console
+	 * @author Benjamin Prints to UI and console
 	 * 
 	 * @param s
 	 */
-	public void println(String s)
-	{
+	public void println(String s) {
 		System.out.println(s + "\n");
 		this.outputWindow.append(s + "\n");
 	}
-	
+
 	public abstract void takeInput(String s);
 
 	/**
 	 * Parses a tftp packet in byte form and returns relevant information
 	 * 
-	 * @param packet - packet to convert
+	 * @param packet
+	 *            - packet to convert
 	 * @return contents of a packet
 	 * @author bloo
 	 */
@@ -590,7 +659,8 @@ public abstract class TFTPConnection {
 				} else if (getType(packet) == OP_ACK) {
 					descriptor += "ACK\nBlock #: " + getBlockNum(packet) + "\n";
 				} else if (getType(packet) == OP_ERROR) {
-					descriptor += "ERROR\nError Num: " + getError(packet) + "\nError Msg: " + getErrorMsg(packet) + "\n";
+					descriptor += "ERROR\nError Num: " + getError(packet) + "\nError Msg: " + getErrorMsg(packet)
+							+ "\n";
 				}
 			}
 
@@ -599,11 +669,11 @@ public abstract class TFTPConnection {
 
 		return null;
 	}
-	
-	protected class FullFileSystemException extends IOException{
+
+	protected class FullFileSystemException extends IOException {
 		private static final long serialVersionUID = 7770593212561838179L;
 
-		FullFileSystemException(String msg){
+		FullFileSystemException(String msg) {
 			super(msg);
 		}
 	}

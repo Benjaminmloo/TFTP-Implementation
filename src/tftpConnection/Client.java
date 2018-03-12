@@ -317,33 +317,20 @@ public class Client extends TFTPConnection {
 			// loop begins at 0 and increments as socket times out. Goes up every 2 seconds.
 			// If the data package is successfully transfered, leave loop and continue
 			// connection.
-			for (int i = 0; i < retransmit_limit; i++) {
-				try {
-					if (requestType == OP_WRQ) {
-						ackPacket = receive(connectionSocket); // Receive a packet using the connection Socket
-						if (getType(ackPacket) == OP_ACK) { // If server has given acknowledge to write
-							sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
-							i = retransmit_limit + 1; // Successful - leave loop
-						} else if (getType(ackPacket) == OP_ERROR) {
-							System.err.println("\n" + packetToString(ackPacket)); // if the error packet hasn't already
-																					// been printed
-						}
-					} else if (requestType == OP_RRQ) {
-						receiveFile(connectionSocket, localFile);
-						i = retransmit_limit + 1; // Successful - leave loop
-					}
-				} catch (SocketTimeoutException e) {
-					if (i == retransmit_limit - 1) {
-						System.out.println("Unresponsive Transit... Please try again. Attempts: " + retransmit_limit);
-						if (firstPacketSent) {
-							if (verbose)
-								System.out.println("\nServer timed out. RRQ resent.\n");
-							// connectionSocket.send();
-						}
-					}
-				}
-			}
 
+			if (requestType == OP_WRQ) {
+				ackPacket = receive(connectionSocket); // Receive a packet using the connection Socket
+				if (getType(ackPacket) == OP_ACK) { // If server has given acknowledge to write
+					sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
+
+				} else if (getType(ackPacket) == OP_ERROR) {
+					System.err.println("\n" + packetToString(ackPacket)); // if the error packet hasn't already
+																			// been printed
+				}
+			} else if (requestType == OP_RRQ) {
+				receiveFile(connectionSocket, localFile);
+
+			}
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 			System.exit(1);
