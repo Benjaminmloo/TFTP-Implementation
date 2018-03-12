@@ -23,8 +23,8 @@ public class UserInterface {
 	
 	public UserInterface()
 	{
-		client = new Client();
 		errorSim = new ErrorSimulator();
+		client = new Client(errorSim);
 		server = new Server(69);
 		
 		frame = new JFrame("File Transfer System");
