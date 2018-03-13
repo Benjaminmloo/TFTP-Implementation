@@ -75,6 +75,7 @@ public class UserInterface {
 		frame.pack();
 		frame.setVisible(true);
 		frame.setSize(720, 480);
+		inputField.requestFocus();
 		
 		Thread clientThread = new Thread(	new WindowThread(client));
 		clientThread.start();
@@ -104,9 +105,15 @@ public class UserInterface {
 		}
 	}
 	
+	public void requestInputFocus()
+	{
+		this.inputField.requestFocus();
+	}
+	
 	public static void main(String args[])
 	{
-		new UserInterface();
+		UserInterface UI = new UserInterface();
+		UI.requestInputFocus();
 	}
 	
 	
