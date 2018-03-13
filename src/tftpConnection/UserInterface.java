@@ -38,6 +38,7 @@ public class UserInterface {
 		JTextArea clientArea = client.getOutputWindow();
 		clientArea.setEditable(false);
 		JScrollPane clientWindow = new JScrollPane(clientArea);
+		client.setScrollBar(clientWindow.getVerticalScrollBar());
 		clientWindow.setPreferredSize(new Dimension(600, 400));
 		clientWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		tabPane.add("Client", clientWindow);
@@ -46,6 +47,7 @@ public class UserInterface {
 		JTextArea errorArea = errorSim.getOutputWindow();
 		errorArea.setEditable(false);
 		JScrollPane errorWindow = new JScrollPane(errorArea);
+		errorSim.setScrollBar(errorWindow.getVerticalScrollBar());
 		errorWindow.setPreferredSize(new Dimension(600, 400));
 		errorWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		tabPane.add("Error Simulator", errorWindow);
@@ -54,6 +56,7 @@ public class UserInterface {
 		JTextArea serverArea = server.getOutputWindow();
 		serverArea.setEditable(false);
 		JScrollPane serverWindow = new JScrollPane(serverArea);
+		server.setScrollBar(serverWindow.getVerticalScrollBar());
 		serverWindow.setPreferredSize(new Dimension(600, 400));
 		serverWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		tabPane.add("Server", serverWindow);
@@ -96,6 +99,7 @@ public class UserInterface {
 		case 2:
 			server.getOutputWindow().append(s + "\n");
 			server.takeInput(s);
+
 			break;
 		}
 	}
