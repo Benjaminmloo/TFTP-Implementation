@@ -308,7 +308,7 @@ public abstract class TFTPConnection {
 	 *            - socket to receive from
 	 * @param length
 	 *            - size of potential packet
-	 * @return receivePacket unless there is an exception trying to receive
+	 * @return receivePacket unless there is an exception trying to receive 
 	 * 
 	 * @author bloo
 	 */
@@ -320,7 +320,8 @@ public abstract class TFTPConnection {
 		try {
 			while (true) {
 				socket.receive(receivedPacket);
-				//if (getType(receivedPacket) != OP_DATA || !(lastRcvPkt == null ^  (getType(lastRcvPkt) == OP_DATA && getBlockNum(lastRcvPkt) + 1 == getBlockNum(receivedPacket)))){
+				
+				if ((getType(receivedPacket) != OP_DATA || lastRcvPkt == null || (getType(lastRcvPkt) == OP_DATA && getBlockNum(receivedPacket) == getBlockNum(lastRcvPkt) + 1))){
 					if (verbose) {
 						println("Received:");
 						println(packetToString(receivedPacket));
@@ -329,7 +330,7 @@ public abstract class TFTPConnection {
 					lastRcvPkt = receivedPacket;
 					return receivedPacket;
 
-				//}
+				}
 			}
 		} catch (SocketTimeoutException e) {
 			for (int i = 0; i < receive_limit; i++) {
@@ -337,9 +338,8 @@ public abstract class TFTPConnection {
 					socket.receive(receivedPacket);
 					break;
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-					System.exit(1);
+					if(i % 50 == 0)print("\n");
+					print(".");
 				}
 			}
 		} catch (IOException e) {
