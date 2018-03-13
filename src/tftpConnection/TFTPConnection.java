@@ -29,6 +29,7 @@ import javax.swing.JTextArea;
  */
 public abstract class TFTPConnection {
 
+	private static final int MAX_PACKET_SIZE = 516;
 	// Class Variable definition start
 	protected boolean verbose;
 	protected JTextArea outputWindow = new JTextArea();
@@ -41,7 +42,7 @@ public abstract class TFTPConnection {
 
 	protected static final int SERVER_PORT = 69;
 	protected static final int ESIM_PORT = 23;
-	protected static final int STD_DATA_SIZE = 516;
+	protected static final int STD_DATA_SIZE = MAX_PACKET_SIZE - 4;
 	protected static final byte ZERO_BYTE = 0;
 
 	protected static final byte OP_RRQ = 1;
@@ -192,7 +193,7 @@ public abstract class TFTPConnection {
 			if (getBlockNum(packet) == 1) {
 				data.add(getByteData(packet));
 				send(createAck(1), socket, returnAddress);
-				if (getDataLength(packet) != STD_DATA_SIZE - 4) {
+				if (getDataLength(packet) != STD_DATA_SIZE) {
 					saveFile(data, file);
 					return;
 				}
@@ -218,7 +219,7 @@ public abstract class TFTPConnection {
 				return;
 			}
 
-		} while (getDataLength(newPacket) == STD_DATA_SIZE - 4); // continue while the packets are full
+		} while (getDataLength(newPacket) == STD_DATA_SIZE); // continue while the packets are full
 		saveFile(data, file);
 	}
 
@@ -288,6 +289,16 @@ public abstract class TFTPConnection {
 		}
 	}
 
+	protected DatagramPacket receiveNext(DatagramSocket socket, int length){
+		DatagramPacket receivedPacket;
+		while (true) {
+			receivedPacket = receive(socket, MAX_PACKET_SIZE);
+			if ((getType(receivedPacket) != OP_DATA || lastRcvPkt == null || (getType(lastRcvPkt) == OP_DATA && getBlockNum(receivedPacket) == getBlockNum(lastRcvPkt) + 1))){
+			
+			}
+		}
+	}
+	
 	/**
 	 * Base receive method
 	 * 
@@ -300,7 +311,7 @@ public abstract class TFTPConnection {
 	 * @author bloo
 	 */
 	protected DatagramPacket receive(DatagramSocket socket) {
-		return receive(socket, 516);
+		return receive(socket, MAX_PACKET_SIZE);
 	}
 
 	/**
@@ -320,20 +331,15 @@ public abstract class TFTPConnection {
 		receivedPacket = new DatagramPacket(new byte[length], length);
 
 		try {
-			while (true) {
-				socket.receive(receivedPacket);
-				
-				if ((getType(receivedPacket) != OP_DATA || lastRcvPkt == null || (getType(lastRcvPkt) == OP_DATA && getBlockNum(receivedPacket) == getBlockNum(lastRcvPkt) + 1))){
-					if (verbose) {
-						println("Received:");
-						println(packetToString(receivedPacket));
-					}
-
-					lastRcvPkt = receivedPacket;
-					return receivedPacket;
-
-				}
+			socket.receive(receivedPacket);
+			if (verbose) {
+				println("Received:");
+				println(packetToString(receivedPacket));
 			}
+
+			lastRcvPkt = receivedPacket;
+			return receivedPacket;
+			
 		} catch (SocketTimeoutException e) {
 			for (int i = 0; i < receive_limit; i++) {
 				try {
