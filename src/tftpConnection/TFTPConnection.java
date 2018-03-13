@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.swing.JScrollBar;
 import javax.swing.JTextArea;
 
 /**
@@ -31,6 +32,7 @@ public abstract class TFTPConnection {
 	// Class Variable definition start
 	protected boolean verbose;
 	protected JTextArea outputWindow = new JTextArea();
+	protected JScrollBar scrollBar = new JScrollBar();
 
 	protected static final String OCTET = "octet";
 	protected static final String NETASCII = "netascii";
@@ -603,9 +605,19 @@ public abstract class TFTPConnection {
 		file.close();
 		return data.size();
 	}
+	
+	/**
+	 * @author Benjamin
+	 * @param b 
+	 */
+	public void setScrollBar(JScrollBar b)
+	{
+		this.scrollBar = b;
+	}
 
 	/**
-	 * @author Benjamin Gets textarea attached to child
+	 * @author Benjamin 
+	 * Gets textarea attached to child
 	 * 
 	 * @return
 	 */
@@ -621,6 +633,7 @@ public abstract class TFTPConnection {
 	public void print(String s) {
 		System.out.println(s);
 		this.outputWindow.append(s);
+		this.scrollBar.setValue(scrollBar.getMaximum() + 1);
 	}
 
 	/**
@@ -631,6 +644,7 @@ public abstract class TFTPConnection {
 	public void println(String s) {
 		System.out.println(s + "\n");
 		this.outputWindow.append(s + "\n");
+		this.scrollBar.setValue(scrollBar.getMaximum() + 1);
 	}
 
 	public abstract void takeInput(String s);

@@ -475,7 +475,6 @@ public class Client extends TFTPConnection {
 				e.printStackTrace();
 			}
 		}
-
 		input = s;
 		notifyAll();
 	}
