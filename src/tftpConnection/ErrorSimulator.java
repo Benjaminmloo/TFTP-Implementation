@@ -69,39 +69,33 @@ public class ErrorSimulator extends TFTPConnection {
 	 * @author BLoo, Eric
 	 */
 	void mediateTransfer() {
-		DatagramPacket clientPacket = null, serverPacket = null;
+		DatagramPacket receivePacket = null, lastPacket = null;
+		SocketAddress receiveAddress;
+		print(clientAddress + ", " + serverAddress);
 		while(true){
 			try {
-				clientPacket = receive(mediatorSocket);
-				clientAddress = clientPacket.getSocketAddress();
-
-				if (errorSimMode == 1) {
-					simulateLosePacket(clientPacket, serverAddress);
-				} else if (errorSimMode == 2) {
-					simulateDelayPacket(clientPacket, serverAddress);
-				} else if (errorSimMode == 3) {
-					simulateDuplicatePacket(clientPacket, serverAddress);
-				} else {
-					send(clientPacket.getData(), mediatorSocket, serverAddress);
-				}
-
-				if (serverPacket != null && getType(serverPacket) == OP_DATA && getDataLength(serverPacket) < MAX_DATA_SIZE)
-					break;
-
-				serverPacket = receive(mediatorSocket);
-				serverAddress = serverPacket.getSocketAddress();
-
-				if (errorSimMode == 1) {
-					simulateLosePacket(serverPacket, clientAddress);
-				} else if (errorSimMode == 2) {
-					simulateDelayPacket(serverPacket, clientAddress);
-				} else if (errorSimMode == 3) {
-					simulateDuplicatePacket(serverPacket, clientAddress);
-				} else {
-					send(serverPacket.getData(), mediatorSocket, clientAddress);
+				lastPacket = receivePacket;
+				receivePacket = receive(mediatorSocket);
+				if(serverAddress.equals(receivePacket.getSocketAddress()))
+					receiveAddress = clientAddress;
+				else if(clientAddress.equals(receivePacket.getSocketAddress()))
+					receiveAddress = serverAddress;
+				else {
+					print(receivePacket.getSocketAddress() + "");
+					continue;
 				}
 				
-				if (clientPacket != null && getType(clientPacket) == OP_DATA && getDataLength(clientPacket) < MAX_DATA_SIZE)
+				if (errorSimMode == 1) {
+					simulateLosePacket(receivePacket, receiveAddress);
+				} else if (errorSimMode == 2) {
+					simulateDelayPacket(receivePacket, receiveAddress);
+				} else if (errorSimMode == 3) {
+					simulateDuplicatePacket(receivePacket, receiveAddress);
+				} else {
+					send(receivePacket.getData(), mediatorSocket, receiveAddress);
+				}
+
+				if (lastPacket != null && getType(lastPacket) == OP_DATA && getDataLength(lastPacket) < MAX_DATA_SIZE)
 					break;
 
 			} catch (SocketTimeoutException e) {
@@ -159,7 +153,8 @@ public class ErrorSimulator extends TFTPConnection {
 		if (getBlockNum(packet) == errorSimBlock && getType(packet) == errorSimType) {
 
 			print("THIS PACKET WILL BE LOST\n");
-
+			errorSimBlock = -1;
+			errorSimType = -1;
 			// packet is not sent
 		}
 

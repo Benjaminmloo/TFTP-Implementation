@@ -39,6 +39,7 @@ public class Client extends TFTPConnection {
 	 * @param mode
 	 *            - the mode in which the data will be handeled
 	 * @return the packet in the form of a byte array
+	 * @author Eric
 	 */
 	public byte[] createRQ(byte opCode, byte[] file, byte[] mode) {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -57,8 +58,9 @@ public class Client extends TFTPConnection {
 	}
 
 	/**
-	 * @author Benjamin, Bloo, Eric, Basic UI, gets input from user ** WILL be upgraded in
-	 *         future iterations.
+	 * Basic UI, gets input from user ** WILL be upgraded in future iterations.
+	 * 
+	 * @author Benjamin, Bloo, Eric
 	 */
 	public synchronized void userInterface() {
 		String localFile = null, serverFile = null; /*
@@ -138,8 +140,8 @@ public class Client extends TFTPConnection {
 					}
 				}
 
-				establishConnection(operation, localFile, serverFile, sendPort, 
-						errorSimMode, errorSimBlock, errorSimDelay);
+				establishConnection(operation, localFile, serverFile, sendPort, errorSimMode, errorSimBlock,
+						errorSimDelay);
 			}
 
 			/*
@@ -221,11 +223,11 @@ public class Client extends TFTPConnection {
 										getPacketErrorSimBlock();
 										getPacketErrorSimType();
 										getPacketSimDelay();
-										
+
 									} else {
 										throw new InputMismatchException();
 									}
-									
+
 									// set parameters for error simulation
 									errorSim.setParameters(errorSimMode, errorSimBlock, errorSimDelay, errorSimType);
 
@@ -277,11 +279,13 @@ public class Client extends TFTPConnection {
 	}
 
 	/**
-	 * @author Benjamin, Andrew, Eric Establishes either a WRQ or RRQ connection to
-	 *         the server, depending on user specification
+	 * Establishes either a WRQ or RRQ connection to the server, depending on user
+	 * specification
+	 * 
+	 * @author Benjamin, Andrew, Eric, BLoo
 	 */
-	public void establishConnection(byte requestType, String localFile, String serverFile, int port,
-			int errorSimMode, int errorSimBlock, int errorSimDelay) {
+	public void establishConnection(byte requestType, String localFile, String serverFile, int port, int errorSimMode,
+			int errorSimBlock, int errorSimDelay) {
 		ArrayList<byte[]> data = null;
 		DatagramSocket connectionSocket;
 		DatagramPacket ackPacket;
@@ -343,11 +347,11 @@ public class Client extends TFTPConnection {
 	 * @author Eric
 	 */
 	public void getPacketErrorSimBlock() {
-		
+
 		while (true) {
 			input = null;
 			try {
-				print("Which packet to lose? (Block#) ");
+				print("Block #(1 - 65000): ");
 				while (input == null) {
 					try {
 						wait();
@@ -372,18 +376,18 @@ public class Client extends TFTPConnection {
 			}
 		}
 	}
-	
+
 	/**
 	 * Get Packet delay, used for delay, and duplicate error Simulations
 	 * 
 	 * @author Eric
 	 */
 	public void getPacketSimDelay() {
-	
+
 		while (true) {
 			input = null;
 			try {
-				print("how long of a delay? (ms) ");
+				print("Delay (ms):  ");
 				while (input == null) {
 					try {
 						wait();
@@ -408,14 +412,14 @@ public class Client extends TFTPConnection {
 			}
 		}
 	}
-	
+
 	/**
 	 * Get Packet Type to be modified during error Simulation
 	 * 
 	 * @author Eric
 	 */
 	public void getPacketErrorSimType() {
-		
+
 		while (true) {
 			input = null;
 			try {
@@ -428,13 +432,13 @@ public class Client extends TFTPConnection {
 					}
 				}
 
-				if(input.equals("1")) {
+				if (input.equals("1")) {
 					errorSimType = 1;
-				}else if (input.equals("2")){
+				} else if (input.equals("2")) {
 					errorSimType = 2;
-				}else if (input.equals("3")){
+				} else if (input.equals("3")) {
 					errorSimType = 3;
-				}else if (input.equals("4")){
+				} else if (input.equals("4")) {
 					errorSimType = 4;
 				} else {
 					throw new InputMismatchException();
@@ -453,6 +457,8 @@ public class Client extends TFTPConnection {
 
 	/**
 	 * closes the datagram socket and quits the program
+	 * 
+	 * @Eric
 	 */
 	public void closeConnection(DatagramSocket socket) {
 		socket.close();

@@ -50,7 +50,7 @@ public abstract class TFTPConnection {
 	protected static final byte OP_DATA = 3;
 	protected static final byte OP_ACK = 4;
 	protected static final byte OP_ERROR = 5;
-	private static final int TRANSMIT_LIMIT = 200;
+	private static final int TRANSMIT_LIMIT = 5;
 
 	private DatagramPacket lastSentPkt;
 	// Class Variable definition end
@@ -167,6 +167,10 @@ public abstract class TFTPConnection {
 							print("\n");
 						print(".");
 					}
+					if(j >= TRANSMIT_LIMIT) {
+						print("Connection timed out \n Stopping transfer");
+						return;
+					}
 				}
 			}
 		}
@@ -200,12 +204,12 @@ public abstract class TFTPConnection {
 	protected void receiveFile(DatagramPacket packet, DatagramSocket socket, String file) throws IOException {
 		ArrayList<byte[]> data = new ArrayList<byte[]>();
 		SocketAddress returnAddress = packet.getSocketAddress();
-		DatagramPacket newPacket;
+		DatagramPacket receivePacket = null;
 
 		if (getType(packet) == OP_DATA) { // if the initial packet is a data packet
 			if (getBlockNum(packet) == 1) {
 				data.add(getByteData(packet));
-				send(createAck(1), socket, returnAddress);
+				
 				if (getDataLength(packet) != MAX_DATA_SIZE) {
 					saveFile(data, file);
 					return;
@@ -220,19 +224,40 @@ public abstract class TFTPConnection {
 		}
 
 		do {
-			newPacket = receiveNext(socket);
+			for(int i = 0; i < TRANSMIT_LIMIT; i++)
+			{
+				try{
+					send(createAck(data.size()), socket, returnAddress);
 
-			if (getType(newPacket) == OP_DATA) {
-				data.add(getByteData(newPacket));
-				send(createAck(getBlockNum(newPacket)), socket, returnAddress);
-			} else if (getType(newPacket) == OP_ERROR) {
-				System.err.println("ERROR: " + getErrorMsg(newPacket));
-				return;
-			} else {
-				return;
+					receivePacket = receiveNext(socket);
+
+					if (getType(receivePacket) == OP_DATA) {
+						data.add(getByteData(receivePacket));
+						break;
+					} else if (getType(receivePacket) == OP_ERROR) {
+						System.err.println("ERROR: " + getErrorMsg(receivePacket));
+						return;
+					} else {
+						return;
+					}
+				}catch(SocketTimeoutException e) {
+					if (verbose) {
+						if (i % 50 == 0)
+							print("\n");
+						print(".");
+					}
+					if(i >= TRANSMIT_LIMIT) {
+						print("Connection timed out \n Stopping transfer");
+						return;
+					}
+				}
 			}
+		} while (receivePacket == null || (getType(receivePacket) != OP_DATA ^ getDataLength(receivePacket) == MAX_DATA_SIZE));
 
-		} while (getDataLength(newPacket) == MAX_DATA_SIZE); // continue while the packets are full
+		send(createAck(data.size()), socket, returnAddress);
+		// continue if the last received packet hold data and are full
+		//if the last received packet isn't data
+		//or if nothing was received last
 		saveFile(data, file);
 	}
 
@@ -284,7 +309,7 @@ public abstract class TFTPConnection {
 	protected void send(DatagramSocket socket, DatagramPacket sendPacket) {
 		try {
 			if (verbose) {
-				println("Sending: ");
+				println(socket.getLocalPort() + " Sending: ");
 				println(packetToString(sendPacket));
 			}
 
@@ -384,7 +409,7 @@ public abstract class TFTPConnection {
 		try {
 			socket.receive(receivedPacket);
 			if (verbose) {
-				println("Received:");
+				println(socket.getLocalPort() + " received:");
 				println(packetToString(receivedPacket));
 			}
 
