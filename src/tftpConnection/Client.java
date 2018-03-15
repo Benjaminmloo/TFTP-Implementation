@@ -16,7 +16,6 @@ public class Client extends TFTPConnection {
 	// Test Variable
 	private byte operation; // Operation type to be requested
 	private String input;
-	private static int retransmit_limit = 3; // Number of times to retransmit a packet due to delay.
 	private ErrorSimulator errorSim;
 	private int errorSimMode = 0;
 	private int errorSimBlock = 0;
@@ -286,8 +285,6 @@ public class Client extends TFTPConnection {
 		ArrayList<byte[]> data = null;
 		DatagramSocket connectionSocket;
 		DatagramPacket ackPacket;
-		boolean packetInOrder; // Check to see if all packets are in order.
-		boolean firstPacketSent = true; // First ACK packets sent, don't resend ACK. default to true.
 
 		if (requestType == OP_WRQ) { // Check if the request was a write operation (2).
 			try {

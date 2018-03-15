@@ -2,8 +2,8 @@ package tftpConnection;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketTimeoutException;
 import java.util.InputMismatchException;
-import java.util.Scanner;
 
 /**
  * @author BenjaminP, BenB
@@ -169,6 +169,8 @@ public class Server extends TFTPConnection {
 				} catch (IllegalArgumentException e) {
 					e.printStackTrace();
 					System.exit(1);
+				} catch (SocketTimeoutException e) {
+					print("time out");
 				}
 			}
 		}

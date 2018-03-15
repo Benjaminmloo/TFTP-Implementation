@@ -5,6 +5,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 
 /**
@@ -68,39 +69,45 @@ public class ErrorSimulator extends TFTPConnection {
 	 * @author BLoo, Eric
 	 */
 	void mediateTransfer() {
-		DatagramPacket clientPacket, serverPacket = new DatagramPacket(createAck(0), 4);
-		while (true) {
-			clientPacket = receive(mediatorSocket); // wait to receive packet from client
-			clientAddress = clientPacket.getSocketAddress();
+		DatagramPacket clientPacket = null, serverPacket = null;
+		while(true){
+			try {
+				clientPacket = receive(mediatorSocket);
+				clientAddress = clientPacket.getSocketAddress();
 
-			if (errorSimMode == 1) {
-				simulateLosePacket(clientPacket, serverAddress);
-			} else if (errorSimMode == 2) {
-				simulateDelayPacket(clientPacket, serverAddress);
-			} else if (errorSimMode == 3) {
-				simulateDuplicatePacket(clientPacket, serverAddress);
-			} else {
-				send(clientPacket.getData(), mediatorSocket, serverAddress);
-			}
+				if (errorSimMode == 1) {
+					simulateLosePacket(clientPacket, serverAddress);
+				} else if (errorSimMode == 2) {
+					simulateDelayPacket(clientPacket, serverAddress);
+				} else if (errorSimMode == 3) {
+					simulateDuplicatePacket(clientPacket, serverAddress);
+				} else {
+					send(clientPacket.getData(), mediatorSocket, serverAddress);
+				}
 
-			if (getType(serverPacket) == 3 && getDataLength(serverPacket) < 512)
-				break;
+				if (serverPacket != null && getType(serverPacket) == OP_DATA && getDataLength(serverPacket) < MAX_DATA_SIZE)
+					break;
 
-			serverPacket = receive(mediatorSocket);
-			serverAddress = serverPacket.getSocketAddress();
+				serverPacket = receive(mediatorSocket);
+				serverAddress = serverPacket.getSocketAddress();
 
-			if (errorSimMode == 1) {
-				simulateLosePacket(serverPacket, clientAddress);
-			} else if (errorSimMode == 2) {
-				simulateDelayPacket(serverPacket, clientAddress);
-			} else if (errorSimMode == 3) {
-				simulateDuplicatePacket(serverPacket, clientAddress);
-			} else {
-				send(serverPacket.getData(), mediatorSocket, clientAddress);
-			}
+				if (errorSimMode == 1) {
+					simulateLosePacket(serverPacket, clientAddress);
+				} else if (errorSimMode == 2) {
+					simulateDelayPacket(serverPacket, clientAddress);
+				} else if (errorSimMode == 3) {
+					simulateDuplicatePacket(serverPacket, clientAddress);
+				} else {
+					send(serverPacket.getData(), mediatorSocket, clientAddress);
+				}
+				
+				if (clientPacket != null && getType(clientPacket) == OP_DATA && getDataLength(clientPacket) < MAX_DATA_SIZE)
+					break;
 
-			if (getType(clientPacket) == 3 && getDataLength(clientPacket) < 512)
-				break;
+			} catch (SocketTimeoutException e) {
+				e.printStackTrace();
+				System.exit(1);
+			} // wait to receive packet from client
 		}
 	}
 
@@ -112,21 +119,27 @@ public class ErrorSimulator extends TFTPConnection {
 	void startPassthrough() {
 		DatagramPacket initialPacket, responsePacket;
 		while (true) {
-			initialPacket = receive(eSimSocket); // wait to receive packet from client
-			clientAddress = initialPacket.getSocketAddress();
-
 			try {
-				send(initialPacket.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
-			} catch (UnknownHostException e) {
-				eSimSocket.close();
-				mediatorSocket.close();
-				e.printStackTrace();
+				initialPacket = receive(eSimSocket);
+				
+				clientAddress = initialPacket.getSocketAddress();
+
+				try {
+					send(initialPacket.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
+				} catch (UnknownHostException e) {
+					eSimSocket.close();
+					mediatorSocket.close();
+					e.printStackTrace();
+				}
+				responsePacket = receive(mediatorSocket);
+				serverAddress = responsePacket.getSocketAddress();
+				send(responsePacket.getData(), mediatorSocket, clientAddress);
+				mediateTransfer();
+				
+			} catch (SocketTimeoutException e1) {
+				e1.printStackTrace();
 				System.exit(1);
 			}
-			responsePacket = receive(mediatorSocket);
-			serverAddress = responsePacket.getSocketAddress();
-			send(responsePacket.getData(), mediatorSocket, clientAddress);
-			mediateTransfer();
 		}
 	}
 

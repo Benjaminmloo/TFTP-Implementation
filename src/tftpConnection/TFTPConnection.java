@@ -1,6 +1,5 @@
 package tftpConnection;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -29,7 +28,6 @@ import javax.swing.JTextArea;
  */
 public abstract class TFTPConnection {
 
-	private static final int MAX_PACKET_SIZE = 516;
 	// Class Variable definition start
 	protected boolean verbose;
 	protected JTextArea outputWindow = new JTextArea();
@@ -42,7 +40,9 @@ public abstract class TFTPConnection {
 
 	protected static final int SERVER_PORT = 69;
 	protected static final int ESIM_PORT = 23;
-	protected static final int STD_DATA_SIZE = MAX_PACKET_SIZE - 4;
+
+	private static final int MAX_PACKET_SIZE = 516;
+	protected static final int MAX_DATA_SIZE = MAX_PACKET_SIZE - 4;
 	protected static final byte ZERO_BYTE = 0;
 
 	protected static final byte OP_RRQ = 1;
@@ -50,9 +50,9 @@ public abstract class TFTPConnection {
 	protected static final byte OP_DATA = 3;
 	protected static final byte OP_ACK = 4;
 	protected static final byte OP_ERROR = 5;
-	private static final int receive_limit = 200;
+	private static final int TRANSMIT_LIMIT = 200;
 
-	private DatagramPacket lastSentPkt, lastRcvPkt;
+	private DatagramPacket lastSentPkt;
 	// Class Variable definition end
 
 	protected static Map<Byte, String> PacketTypes;
@@ -139,22 +139,35 @@ public abstract class TFTPConnection {
 		DatagramPacket ackPacket;
 		for (int i = 1; i <= data.size(); i++) {
 			byte sendData[] = data.get(i - 1);
-			this.send(createData(i, sendData), socket, recipientAddress);
+			/**
+			 * if the packet is sent but not received which is indicated by a time out the
+			 * packet is transmitted again the thread waits again for the ack
+			 */
+			for (int j = 0; j < TRANSMIT_LIMIT; j++) {
+				try {
+					this.send(createData(i, sendData), socket, recipientAddress);
 
-			ackPacket = receive(socket);
+					ackPacket = receiveNext(socket);
+					if (getType(ackPacket) == OP_ERROR) {
+						System.err.println("\nError Occured\n" + packetToString(ackPacket));
+						return;
+					} else if (getType(ackPacket) != OP_ACK) {
+						println("\nReceived packet was not expected");
+						throw new IllegalArgumentException();
+					} else if (getBlockNum(ackPacket) != i) {
+						println("\nACK for a different Block!");
+						throw new IllegalArgumentException();
+					}
 
-			if (getType(ackPacket) == OP_ERROR) {
-				System.err.println("\nError Occured\n" + packetToString(ackPacket));
-				return;
-			}
-			if (getType(ackPacket) != OP_ACK) {
-				println("\nReceived packet was not expected");
-				throw new IllegalArgumentException();
-			}
-
-			if (getBlockNum(ackPacket) != i) {
-				println("\nACK for a different Block!");
-				throw new IllegalArgumentException();
+					break; // if packet was sent and the apropriate ack was received break out of
+							// retransmit loop
+				} catch (SocketTimeoutException e) { // default timeout is 2 seconds
+					if (verbose) {
+						if (j % 50 == 0)
+							print("\n");
+						print(".");
+					}
+				}
 			}
 		}
 	}
@@ -193,7 +206,7 @@ public abstract class TFTPConnection {
 			if (getBlockNum(packet) == 1) {
 				data.add(getByteData(packet));
 				send(createAck(1), socket, returnAddress);
-				if (getDataLength(packet) != STD_DATA_SIZE) {
+				if (getDataLength(packet) != MAX_DATA_SIZE) {
 					saveFile(data, file);
 					return;
 				}
@@ -207,7 +220,7 @@ public abstract class TFTPConnection {
 		}
 
 		do {
-			newPacket = receive(socket);
+			newPacket = receiveNext(socket);
 
 			if (getType(newPacket) == OP_DATA) {
 				data.add(getByteData(newPacket));
@@ -219,7 +232,7 @@ public abstract class TFTPConnection {
 				return;
 			}
 
-		} while (getDataLength(newPacket) == STD_DATA_SIZE); // continue while the packets are full
+		} while (getDataLength(newPacket) == MAX_DATA_SIZE); // continue while the packets are full
 		saveFile(data, file);
 	}
 
@@ -255,11 +268,6 @@ public abstract class TFTPConnection {
 	 */
 	protected void send(byte[] msg, DatagramSocket socket, InetAddress address, int port) {
 		DatagramPacket sendPacket = new DatagramPacket(msg, msg.length, address, port);
-
-		for (byte c : sendPacket.getData()) {
-			print(c + "");
-		}
-		println("");
 		send(socket, sendPacket);
 	}
 
@@ -287,18 +295,59 @@ public abstract class TFTPConnection {
 			e.printStackTrace();
 			System.exit(1);
 		}
+		lastSentPkt = sendPacket;
 	}
 
-	protected DatagramPacket receiveNext(DatagramSocket socket, int length){
+	/**
+	 * receives the next in order packet
+	 * 
+	 * @param socket
+	 *            - socket the packet will be received on
+	 * @param length
+	 *            - the length of the expected pocket
+	 * @return the next packet received in order, will return null if the max number
+	 *         of time outs is reached
+	 * @throws SocketTimeoutException
+	 */
+	protected DatagramPacket receiveNext(DatagramSocket socket) throws SocketTimeoutException {
+		return receiveNext(socket, MAX_PACKET_SIZE);
+	}
+
+	/**
+	 * receives the next in order packet
+	 * 
+	 * @param socket
+	 *            - socket the packet will be received on
+	 * @param length
+	 *            - the length of the expected pocket
+	 * @return the next packet received in order, will return null if the max number
+	 *         of time outs is reached
+	 * @throws SocketTimeoutException
+	 */
+	protected DatagramPacket receiveNext(DatagramSocket socket, int length) throws SocketTimeoutException {
 		DatagramPacket receivedPacket;
 		while (true) {
 			receivedPacket = receive(socket, MAX_PACKET_SIZE);
-			if ((getType(receivedPacket) != OP_DATA || lastRcvPkt == null || (getType(lastRcvPkt) == OP_DATA && getBlockNum(receivedPacket) == getBlockNum(lastRcvPkt) + 1))){
+		/*	println((lastSentPkt == null)
+					 + ", " + (getType(receivedPacket) == OP_ACK && getType(lastSentPkt) == OP_DATA
+						&& getBlockNum(receivedPacket) == getBlockNum(lastSentPkt))
+					 + ", " + (getType(receivedPacket) == OP_DATA && getType(lastSentPkt) == OP_ACK
+						&& getBlockNum(receivedPacket) == getBlockNum(lastSentPkt) + 1)
+					 + ", " + (getType(receivedPacket) == OP_ERROR));
+			*/
 			
+			if (lastSentPkt == null
+					|| (getType(receivedPacket) == OP_ACK && getType(lastSentPkt) == OP_DATA
+							&& getBlockNum(receivedPacket) == getBlockNum(lastSentPkt))
+					|| (getType(receivedPacket) == OP_DATA && getType(lastSentPkt) == OP_ACK
+							&& getBlockNum(receivedPacket) == getBlockNum(lastSentPkt) + 1)
+					|| getType(receivedPacket) == OP_ERROR) {
+				return receivedPacket;
 			}
+			println("received wrong packet");
 		}
 	}
-	
+
 	/**
 	 * Base receive method
 	 * 
@@ -309,8 +358,9 @@ public abstract class TFTPConnection {
 	 * @return receivedPacket unless there is an exception trying to receive
 	 * 
 	 * @author bloo
+	 * @throws SocketTimeoutException
 	 */
-	protected DatagramPacket receive(DatagramSocket socket) {
+	protected DatagramPacket receive(DatagramSocket socket) throws SocketTimeoutException {
 		return receive(socket, MAX_PACKET_SIZE);
 	}
 
@@ -321,11 +371,12 @@ public abstract class TFTPConnection {
 	 *            - socket to receive from
 	 * @param length
 	 *            - size of potential packet
-	 * @return receivePacket unless there is an exception trying to receive 
+	 * @return receivePacket unless there is an exception trying to receive
 	 * 
 	 * @author bloo
+	 * @throws SocketTimeoutException
 	 */
-	protected DatagramPacket receive(DatagramSocket socket, int length) {
+	protected DatagramPacket receive(DatagramSocket socket, int length) throws SocketTimeoutException {
 		DatagramPacket receivedPacket;
 
 		receivedPacket = new DatagramPacket(new byte[length], length);
@@ -337,20 +388,11 @@ public abstract class TFTPConnection {
 				println(packetToString(receivedPacket));
 			}
 
-			lastRcvPkt = receivedPacket;
 			return receivedPacket;
-			
-		} catch (SocketTimeoutException e) {
-			for (int i = 0; i < receive_limit; i++) {
-				try {
-					socket.receive(receivedPacket);
-					break;
-				} catch (IOException e1) {
-					if(i % 50 == 0)print("\n");
-					print(".");
-				}
-			}
+
 		} catch (IOException e) {
+			if (e instanceof SocketTimeoutException)
+				throw (SocketTimeoutException) e;
 			e.printStackTrace();
 			System.exit(1);
 		}
@@ -384,7 +426,7 @@ public abstract class TFTPConnection {
 	protected byte[] createData(int blockNum, byte[] data) {
 		byte[] packet = new byte[4 + data.length];
 		ByteBuffer dBuff = ByteBuffer.wrap(packet);
-		dBuff.put(new byte[] { 0, 3, (byte) (blockNum / 256), (byte) (blockNum % 256) });
+		dBuff.put(new byte[] { 0, OP_DATA, (byte) (blockNum / 256), (byte) (blockNum % 256) });
 		dBuff.put(data);
 		return packet;
 	}
@@ -584,6 +626,10 @@ public abstract class TFTPConnection {
 
 			parsedData.add(buffer);
 		}
+
+		println(parsedData.get(parsedData.size() - 1).length + "");
+		if (parsedData.get(parsedData.size() - 1).length == 512)
+			parsedData.add(new byte[0]);
 		return parsedData;
 	}
 
@@ -611,19 +657,17 @@ public abstract class TFTPConnection {
 		file.close();
 		return data.size();
 	}
-	
+
 	/**
 	 * @author Benjamin
-	 * @param b 
+	 * @param b
 	 */
-	public void setScrollBar(JScrollBar b)
-	{
+	public void setScrollBar(JScrollBar b) {
 		this.scrollBar = b;
 	}
 
 	/**
-	 * @author Benjamin 
-	 * Gets textarea attached to child
+	 * @author Benjamin Gets textarea attached to child
 	 * 
 	 * @return
 	 */
