@@ -77,8 +77,8 @@ public class ThreadedConnection extends TFTPConnection implements Runnable {
 			case 2:
 				// Respond with ACK block 0
 				if(verbose)println("Handleing wrq");
-				if(!Files.exists(Paths.get(fileName)))
-					throw new FileNotFoundException("File \"" + fileName + "\" not found"); //verify existence of file before operation
+				if(Files.exists(Paths.get(fileName)))
+					throw new FileAlreadyExistsException("File \"" + fileName + "\" Already Exists"); //verify existence of file before operation
 				send(createAck(0), handlerSocket, packet.getSocketAddress());
 				receiveFile(packet, handlerSocket, fileName);
 				break;

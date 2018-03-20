@@ -72,19 +72,19 @@ public class ErrorSimulator extends TFTPConnection {
 		DatagramPacket receivePacket = null, lastPacket = null;
 		SocketAddress receiveAddress;
 		print(clientAddress + ", " + serverAddress);
-		while(true){
+		while (true) {
 			try {
 				lastPacket = receivePacket;
 				receivePacket = receive(mediatorSocket);
-				if(serverAddress.equals(receivePacket.getSocketAddress()))
+				if (serverAddress.equals(receivePacket.getSocketAddress()))
 					receiveAddress = clientAddress;
-				else if(clientAddress.equals(receivePacket.getSocketAddress()))
+				else if (clientAddress.equals(receivePacket.getSocketAddress()))
 					receiveAddress = serverAddress;
 				else {
 					print(receivePacket.getSocketAddress() + "");
 					continue;
 				}
-				
+
 				if (errorSimMode == 1) {
 					simulateLosePacket(receivePacket, receiveAddress);
 				} else if (errorSimMode == 2) {
@@ -115,7 +115,7 @@ public class ErrorSimulator extends TFTPConnection {
 		while (true) {
 			try {
 				initialPacket = receive(eSimSocket);
-				
+
 				clientAddress = initialPacket.getSocketAddress();
 
 				try {
@@ -129,7 +129,7 @@ public class ErrorSimulator extends TFTPConnection {
 				serverAddress = responsePacket.getSocketAddress();
 				send(responsePacket.getData(), mediatorSocket, clientAddress);
 				mediateTransfer();
-				
+
 			} catch (SocketTimeoutException e1) {
 				e1.printStackTrace();
 				System.exit(1);
@@ -183,6 +183,9 @@ public class ErrorSimulator extends TFTPConnection {
 
 			// delay the packet
 			try {
+				errorSimMode = -1;
+				errorSimBlock = -1;
+				errorSimType = -1;
 				Thread.sleep(errorSimDelay);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -206,6 +209,9 @@ public class ErrorSimulator extends TFTPConnection {
 	public void simulateDuplicatePacket(DatagramPacket packet, SocketAddress address) {
 
 		if (getBlockNum(packet) == errorSimBlock && getType(packet) == errorSimType) {
+			
+			errorSimBlock = -1;
+			errorSimType = -1;
 
 			print("THIS PACKET WILL BE DUPLICATED\n");
 
