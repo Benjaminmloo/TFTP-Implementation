@@ -275,9 +275,33 @@ public class Client extends TFTPConnection {
 				println("Invalid input! enter 1, 2, 3 or 4");
 			}
 		}
-		print("Program is now closing...");
+		print("Program is now closing...\n");
+		for(int i = 0; i< 5; i++) {
+			if(i > 3) {
+				print("Good bye!");
+				timeDelay();
+			} else {
+				timeDelay();
+				print("..");
+			}		
+		}
+		System.exit(0);
 	}
 
+	/**
+	 * Time delay to visually show the effects in the UI when options are selected.
+	 * Used for closing a program.
+	 * 
+	 * @author Andrew
+	 */
+	public void timeDelay() {
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	/**
 	 * Establishes either a WRQ or RRQ connection to the server, depending on user
 	 * specification
