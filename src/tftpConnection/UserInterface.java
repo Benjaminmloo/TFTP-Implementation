@@ -5,10 +5,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.*;
+import javax.swing.text.DefaultCaret;
 
 /**
  * 
- * @author Benjamin
+ * @author Benjamin, Andrew
  *
  */
 public class UserInterface {
@@ -20,6 +21,12 @@ public class UserInterface {
 	private Client client;
 	private ErrorSimulator errorSim;
 	private Server server;
+	
+	private JTextArea clientArea, errorArea, serverArea;
+	private JScrollPane clientWindow, errorWindow, serverWindow;
+	private JPanel inputPanel;
+	
+	DefaultCaret caret;
 	
 	public UserInterface()
 	{
@@ -35,34 +42,43 @@ public class UserInterface {
 		inputField.addActionListener(	new InputController(inputField)	);
 		
 		
-		JTextArea clientArea = client.getOutputWindow();
+		clientArea = client.getOutputWindow();
 		clientArea.setEditable(false);
-		JScrollPane clientWindow = new JScrollPane(clientArea);
+		clientWindow = new JScrollPane(clientArea);
 		client.setScrollBar(clientWindow.getVerticalScrollBar());
 		clientWindow.setPreferredSize(new Dimension(600, 400));
-		clientWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		clientWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		tabPane.add("Client", clientWindow);
-
 		
-		JTextArea errorArea = errorSim.getOutputWindow();
+		caret = (DefaultCaret) clientArea.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+		
+		
+		errorArea = errorSim.getOutputWindow();
 		errorArea.setEditable(false);
-		JScrollPane errorWindow = new JScrollPane(errorArea);
+		errorWindow = new JScrollPane(errorArea);
 		errorSim.setScrollBar(errorWindow.getVerticalScrollBar());
 		errorWindow.setPreferredSize(new Dimension(600, 400));
-		errorWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		errorWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		tabPane.add("Error Simulator", errorWindow);
+		
+		caret = (DefaultCaret) errorArea.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 
 
-		JTextArea serverArea = server.getOutputWindow();
+		serverArea = server.getOutputWindow();
 		serverArea.setEditable(false);
-		JScrollPane serverWindow = new JScrollPane(serverArea);
+		serverWindow = new JScrollPane(serverArea);
 		server.setScrollBar(serverWindow.getVerticalScrollBar());
 		serverWindow.setPreferredSize(new Dimension(600, 400));
-		serverWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		serverWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		tabPane.add("Server", serverWindow);
+		
+		caret = (DefaultCaret) serverArea.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 
 
-		JPanel inputPanel = new JPanel();
+		inputPanel = new JPanel();
 		
 		GridBagConstraints gbc =  new GridBagConstraints();
 		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
@@ -108,6 +124,7 @@ public class UserInterface {
 	public void requestInputFocus()
 	{
 		this.inputField.requestFocus();
+		
 	}
 	
 	public static void main(String args[])
