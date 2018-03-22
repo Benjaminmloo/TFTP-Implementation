@@ -1,6 +1,8 @@
 package tftpConnection;
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -16,7 +18,7 @@ public class UserInterface {
 	
 	private JFrame frame;
 	private JTextField inputField;
-	private JTabbedPane tabPane;
+	private JTabbedPane tabPane, tabPane2, tabPane3;
 	
 	private Client client;
 	private ErrorSimulator errorSim;
@@ -24,7 +26,7 @@ public class UserInterface {
 	
 	private JTextArea clientArea, errorArea, serverArea;
 	private JScrollPane clientWindow, errorWindow, serverWindow;
-	private JPanel inputPanel;
+	private JPanel outputPanel, inputPanel, subOutputPanel;
 	
 	DefaultCaret caret;
 	
@@ -38,6 +40,8 @@ public class UserInterface {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		tabPane = new JTabbedPane();
+		tabPane2 = new JTabbedPane();
+		tabPane3 = new JTabbedPane();
 		inputField = new JTextField();
 		inputField.addActionListener(	new InputController(inputField)	);
 		
@@ -48,7 +52,6 @@ public class UserInterface {
 		client.setScrollBar(clientWindow.getVerticalScrollBar());
 		clientWindow.setPreferredSize(new Dimension(600, 400));
 		clientWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-		tabPane.add("Client", clientWindow);
 		
 		caret = (DefaultCaret) clientArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
@@ -60,7 +63,6 @@ public class UserInterface {
 		errorSim.setScrollBar(errorWindow.getVerticalScrollBar());
 		errorWindow.setPreferredSize(new Dimension(600, 400));
 		errorWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-		tabPane.add("Error Simulator", errorWindow);
 		
 		caret = (DefaultCaret) errorArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
@@ -72,26 +74,50 @@ public class UserInterface {
 		server.setScrollBar(serverWindow.getVerticalScrollBar());
 		serverWindow.setPreferredSize(new Dimension(600, 400));
 		serverWindow.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-		tabPane.add("Server", serverWindow);
 		
 		caret = (DefaultCaret) serverArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 
 
+		tabPane.add("Client", clientWindow);
+		tabPane2.add("Error Simulator", errorWindow);
+        tabPane3.add("Server", serverWindow);
+        
+        /* Since it is a gridLayout, it'll always be symetrical. A SubOutputPanel is made for error and server to reduce
+        *  The size of the window and give the attention onto the Client window.
+        */
+		outputPanel = new JPanel();
+		subOutputPanel = new JPanel();
 		inputPanel = new JPanel();
-		
+
 		GridBagConstraints gbc =  new GridBagConstraints();
-		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
-		inputPanel.add(tabPane, gbc);
-		inputPanel.add(new JLabel("Input commands here: "), gbc);
-		inputPanel.add(inputField, gbc);
-		frame.add(inputPanel);
 		
+		outputPanel.setLayout(new GridLayout(0,2));
+		subOutputPanel.setLayout(new GridLayout(0,2));
+		inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+		
+		outputPanel.add(tabPane, gbc);
+		subOutputPanel.add(tabPane2, gbc);
+		subOutputPanel.add(tabPane3, gbc);
+		outputPanel.add(subOutputPanel, gbc);
+		
+		inputPanel.add(new JLabel("Input commands here: "));
+		inputPanel.add(inputField);
+		
+		// The old interface if we want to revert back.
+//		outputPanel.setLayout(new BoxLayout(outputPanel, BoxLayout.Y_AXIS));
+		
+//		outputPanel.add(tabPane, gbc);
+//		outputPanel.add(new JLabel("Input commands here: "), gbc);
+//		outputPanel.add(inputField, gbc);
+		
+		frame.add(outputPanel, BorderLayout.CENTER);
+		frame.add(inputPanel, BorderLayout.SOUTH);
 		
 		frame.pack();
 		frame.setVisible(true);
-		frame.setSize(720, 480);
-		inputField.requestFocus();
+		frame.setSize(920, 480);
+		inputField.requestFocusInWindow();
 		
 		Thread clientThread = new Thread(	new WindowThread(client));
 		clientThread.start();
