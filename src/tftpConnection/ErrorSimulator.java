@@ -17,7 +17,7 @@ public class ErrorSimulator extends TFTPConnection {
 	// Class Variable definition start
 	private DatagramSocket eSimSocket, mediatorSocket;
 	private SocketAddress clientAddress, serverAddress;
-	private String input;
+	//private String input;
 	private int errorSimMode, errorSimBlock, errorSimDelay, errorSimType;
 
 	// Class Variable definition finish
@@ -71,7 +71,6 @@ public class ErrorSimulator extends TFTPConnection {
 	void mediateTransfer() {
 		DatagramPacket receivePacket = null, lastPacket = null;
 		SocketAddress receiveAddress;
-		print(clientAddress + ", " + serverAddress);
 		while (true) {
 			try {
 				lastPacket = receivePacket;
@@ -95,7 +94,7 @@ public class ErrorSimulator extends TFTPConnection {
 					send(receivePacket.getData(), mediatorSocket, receiveAddress);
 				}
 
-				if (lastPacket != null && getType(lastPacket) == OP_DATA && getDataLength(lastPacket) < MAX_DATA_SIZE)
+				if (lastPacket != null && TFTPPacket.getType(receivePacket) == TFTPPacket.OP_ERROR && TFTPPacket.getType(lastPacket) == TFTPPacket.OP_DATA && TFTPPacket.getDataLength(lastPacket) < MAX_DATA_SIZE)
 					break;
 
 			} catch (SocketTimeoutException e) {
@@ -150,7 +149,7 @@ public class ErrorSimulator extends TFTPConnection {
 	 */
 	public void simulateLosePacket(DatagramPacket packet, SocketAddress address) {
 
-		if (getBlockNum(packet) == errorSimBlock && getType(packet) == errorSimType) {
+		if (TFTPPacket.getBlockNum(packet) == errorSimBlock && TFTPPacket.getType(packet) == errorSimType) {
 
 			print("THIS PACKET WILL BE LOST\n");
 			errorSimBlock = -1;
@@ -177,7 +176,7 @@ public class ErrorSimulator extends TFTPConnection {
 	 */
 	public void simulateDelayPacket(DatagramPacket packet, SocketAddress address) {
 
-		if (getBlockNum(packet) == errorSimBlock && getType(packet) == errorSimType) {
+		if (TFTPPacket.getBlockNum(packet) == errorSimBlock && TFTPPacket.getType(packet) == errorSimType) {
 
 			print("THIS PACKET WILL BE DELAYED\n");
 
@@ -208,7 +207,7 @@ public class ErrorSimulator extends TFTPConnection {
 	 */
 	public void simulateDuplicatePacket(DatagramPacket packet, SocketAddress address) {
 
-		if (getBlockNum(packet) == errorSimBlock && getType(packet) == errorSimType) {
+		if (TFTPPacket.getBlockNum(packet) == errorSimBlock && TFTPPacket.getType(packet) == errorSimType) {
 			
 			errorSimBlock = -1;
 			errorSimType = -1;
@@ -260,7 +259,7 @@ public class ErrorSimulator extends TFTPConnection {
 
 	@Override
 	public void takeInput(String s) {
-		input += s;
+		//input += s;
 	}
 
 	/**

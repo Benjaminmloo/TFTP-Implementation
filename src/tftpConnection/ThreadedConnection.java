@@ -42,7 +42,7 @@ public class ThreadedConnection extends TFTPConnection implements Runnable {
 
 		if (data[0] == 0 && data[data.length - 1] == 0) {
 			byte request = data[1];
-			if (PacketTypes.containsKey(request)) {
+			if (TFTPPacket.PacketTypes.containsKey(request)) {
 				return request;
 			} else
 				throw new IllegalArgumentException();
@@ -61,7 +61,7 @@ public class ThreadedConnection extends TFTPConnection implements Runnable {
 	private void requestHandler(DatagramPacket packet) {
 		byte request = this.getRequest(packet);
 		DatagramSocket handlerSocket = waitForSocket();
-		String fileName = getFileName(packet);
+		String fileName = TFTPPacket.getFileName(packet);
 		try {
 			switch (request) {
 			/* Read Request */
@@ -79,7 +79,7 @@ public class ThreadedConnection extends TFTPConnection implements Runnable {
 				if(verbose)println("Handleing wrq");
 				if(Files.exists(Paths.get(fileName)))
 					throw new FileAlreadyExistsException("File \"" + fileName + "\" Already Exists"); //verify existence of file before operation
-				send(createAck(0), handlerSocket, packet.getSocketAddress());
+				send(TFTPPacket.createAck(0), handlerSocket, packet.getSocketAddress());
 				receiveFile(packet, handlerSocket, fileName);
 				break;
 
@@ -99,13 +99,13 @@ public class ThreadedConnection extends TFTPConnection implements Runnable {
 				break;
 			}
 		}catch(FileNotFoundException | NoSuchFileException | InvalidPathException e){
-			send(createError(1, e.getMessage().getBytes()), handlerSocket, packet.getSocketAddress());
+			send(TFTPPacket.createError(1, e.getMessage().getBytes()), handlerSocket, packet.getSocketAddress());
 		}catch(AccessDeniedException e){
-			send(createError(2, e.getMessage().getBytes()), handlerSocket, packet.getSocketAddress());
+			send(TFTPPacket.createError(2, e.getMessage().getBytes()), handlerSocket, packet.getSocketAddress());
 		}catch(FullFileSystemException e){
-			send(createError(3, e.getMessage().getBytes()), handlerSocket, packet.getSocketAddress());
+			send(TFTPPacket.createError(3, e.getMessage().getBytes()), handlerSocket, packet.getSocketAddress());
 		}catch(FileAlreadyExistsException e){
-			send(createError(6, e.getMessage().getBytes()), handlerSocket, packet.getSocketAddress());
+			send(TFTPPacket.createError(6, e.getMessage().getBytes()), handlerSocket, packet.getSocketAddress());
 		}catch (IOException e) {
 			
 			e.printStackTrace();

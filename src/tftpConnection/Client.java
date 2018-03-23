@@ -314,7 +314,7 @@ public class Client extends TFTPConnection {
 		DatagramSocket connectionSocket;
 		DatagramPacket ackPacket;
 
-		if (requestType == OP_WRQ) { // Check if the request was a write operation (2).
+		if (requestType == TFTPPacket.OP_WRQ) { // Check if the request was a write operation (2).
 			try {
 				data = readFile(localFile); // Save localFile to a temp byte array. data will then be used to write to
 											// destination.
@@ -343,16 +343,16 @@ public class Client extends TFTPConnection {
 			// If the data package is successfully transfered, leave loop and continue
 			// connection.
 
-			if (requestType == OP_WRQ) {
+			if (requestType == TFTPPacket.OP_WRQ) {
 				ackPacket = receive(connectionSocket); // Receive a packet using the connection Socket
-				if (getType(ackPacket) == OP_ACK) { // If server has given acknowledge to write
+				if (TFTPPacket.getType(ackPacket) == TFTPPacket.OP_ACK) { // If server has given acknowledge to write
 					sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
 
-				} else if (getType(ackPacket) == OP_ERROR) {
-					System.err.println("\n" + packetToString(ackPacket)); // if the error packet hasn't already
+				} else if (TFTPPacket.getType(ackPacket) == TFTPPacket.OP_ERROR) {
+					System.err.println("\n" + TFTPPacket.packetToString(ackPacket)); // if the error packet hasn't already
 																			// been printed
 				}
-			} else if (requestType == OP_RRQ) {
+			} else if (requestType == TFTPPacket.OP_RRQ) {
 				receiveFile(connectionSocket, localFile);
 
 			}
