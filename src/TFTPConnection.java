@@ -28,6 +28,7 @@ public abstract class TFTPConnection {
 	//	Class Variable definition start
 	protected boolean verbose;
 	protected JTextArea outputWindow =  new JTextArea();
+	
 
 	protected static final String OCTET = "octet";
 	protected static final String NETASCII = "netascii";
@@ -650,7 +651,8 @@ public abstract class TFTPConnection {
 		if (data.length > 0) {
 			if (data[0] == 0) {
 				descriptor += "Type: ";
-				if (getType(packet) == OP_RRQ) {
+				/*	Marked obsolete
+				 * if (getType(packet) == OP_RRQ) {
 					descriptor += "RRQ\nFile name: " + getFileName(packet) + "\nMode: " + getMode(packet) + "\n";
 				} else if (getType(packet) == OP_WRQ) {
 					descriptor += "WRQ\nFile name: " + getFileName(packet) + "\nMode: " + getMode(packet) + "\n";
@@ -661,6 +663,29 @@ public abstract class TFTPConnection {
 					descriptor += "ACK\nBlock #: " + getBlockNum(packet) + "\n";
 				} else if (getType(packet) == OP_ERROR) {
 					descriptor += "ERROR\nError Num: " + getError(packet) + "\nError Msg: " + getErrorMsg(packet) + "\n";
+				}*/
+				
+				switch (getType(packet))
+				{
+				case OP_RRQ:
+					descriptor += "RRQ\nFile name: " + getFileName(packet) + "\nMode: " + getMode(packet) + "\n";
+					break;
+				case OP_WRQ:
+					descriptor += "WRQ\nFile name: " + getFileName(packet) + "\nMode: " + getMode(packet) + "\n";
+					break;
+				case OP_DATA:
+					descriptor += "DATA\nBlock #: " + getBlockNum(packet) + "\nBytes of data: " + getDataLength(packet) + "\n";
+					break;
+				case OP_ACK:
+					descriptor += "ACK\nBlock #: " + getBlockNum(packet) + "\n";
+					break;
+				case OP_ERROR:
+					descriptor += "ERROR\nError Num: " + getError(packet) + "\nError Msg: " + getErrorMsg(packet) + "\n";
+					break;
+				default:
+					break;
+					
+					
 				}
 			}
 

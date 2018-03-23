@@ -88,6 +88,7 @@ public class UserInterface {
 		case 0:
 			client.getOutputWindow().append(s + "\n");
 			client.takeInput(s);
+			
 			break;
 		case 1:
 			errorSim.getOutputWindow().append(s + "\n");
@@ -116,14 +117,12 @@ public class UserInterface {
 	{
 		JTextField field;
 		
-		public InputController(JTextField f)
-		{
+		public InputController(JTextField f) {
 			field = f;
 		}
 
 		@Override
 		public void actionPerformed(ActionEvent arg0) {
-			// TODO Auto-generated method stub
 			forwardInput(field.getText());
 			field.setText("");
 		}
@@ -143,17 +142,13 @@ public class UserInterface {
 		@Override
 		public void run() {
 			// TODO Auto-generated method stub
-			if(connection instanceof Client)
+			if(connection instanceof Client || connection instanceof Server)
 			{
 				((Client) connection).userInterface();
 			}
 			else if(connection instanceof ErrorSimulator)
 			{
 				((ErrorSimulator) connection).startPassthrough();
-			}
-			else if(connection instanceof Server)
-			{
-				((Server) connection).userInterface();
 			}
 		}
 		

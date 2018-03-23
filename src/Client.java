@@ -217,10 +217,4 @@ public class Client extends TFTPConnection {
 		input = s;
 		notifyAll();
 	}
-	/*public static void main(String args[]) {
-		Client c = new Client();
-
-		// Get information for file transfer
-		c.userInterface();
-	}*/
 }
