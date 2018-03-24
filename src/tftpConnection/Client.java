@@ -21,6 +21,7 @@ public class Client extends TFTPConnection {
     private int errorSimBlock = 0;
     private int errorSimDelay = 0;
     private int errorSimType = 0;
+    private boolean errorSim4OpCode, errorSim4File, errorSim4Mode;
 
     public Client(ErrorSimulator errorSim) {
 	this.verbose = true;
@@ -198,7 +199,7 @@ public class Client extends TFTPConnection {
 				    /*
 				     * Choose testing Type
 				     */
-				    print("Test Type : LOSE_PACKET(1), DELAY_PACKET(2), DUPLICATE_PACKET (3), UNKNOWN_TID (5): ");
+				    print("Test Type : LOSE_PACKET(1), DELAY_PACKET(2), \n DUPLICATE_PACKET (3), INVALID_FORMAT(4), UNKNOWN_TID (5): ");
 				    while (input == null) {
 					try {
 					    wait();
@@ -223,19 +224,25 @@ public class Client extends TFTPConnection {
 					getPacketErrorSimBlock();
 					getPacketErrorSimType();
 					getPacketSimDelay();
-					
+
+				    } else if (input.equals("4")) { // Simulate invalid packet format
+					errorSimMode = 4;
+					getPacketErrorSimBlock();
+					getPacketErrorSimType();
+					invalidFormatSimulation();
+
 				    } else if (input.equals("5")) { // Simulate unknown TID
 					errorSimMode = 5;
 					getPacketErrorSimBlock();
 					getPacketErrorSimType();
-					
-					
+
 				    } else {
 					throw new InputMismatchException();
 				    }
 
 				    // set parameters for error simulation
-				    errorSim.setParameters(errorSimMode, errorSimBlock, errorSimDelay, errorSimType);
+				    errorSim.setParameters(errorSimMode, errorSimBlock, errorSimDelay, errorSimType, errorSim4OpCode
+					    , errorSim4File, errorSim4Mode);
 
 				    input = null;
 				    notifyAll();
@@ -372,6 +379,53 @@ public class Client extends TFTPConnection {
 	    e.printStackTrace();
 	}
     }
+    
+    public void invalidFormatSimulation() {
+	
+	print("Select which parts of the packet you would like to wrongfully format (y/n)");
+	print("OpCode?(y/n): ");
+	getInvalidFormatInput(errorSim4OpCode);
+	print("File?(y/n): ");
+	getInvalidFormatInput(errorSim4File);
+	print("Mode?(y/n): ");
+	getInvalidFormatInput(errorSim4Mode);
+	
+	
+    }
+    public void getInvalidFormatInput(boolean packetItem) {
+
+	while (true) {
+	    input = null;
+	    try {
+		
+		while (input == null) {
+		    try {
+			wait();
+		    } catch (InterruptedException e) {
+			e.printStackTrace();
+		    }
+		}
+
+		if (input.equals("y") || input.equals("Y")) {
+		    packetItem = true;
+		} else if (input.equals("n") || input.equals("N")) {
+		    packetItem = false;
+		} else {
+		    throw new InputMismatchException();
+		}
+		
+		input = null;
+		notifyAll();
+		break;
+	    } catch (InputMismatchException e) {
+		println("Invalid input!");
+		input = null;
+		notifyAll();
+	    }
+	}
+	
+    }
+    
 
     /**
      * Get Packet block # to be modified during error Simulation

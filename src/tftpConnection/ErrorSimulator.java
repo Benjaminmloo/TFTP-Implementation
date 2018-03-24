@@ -1,5 +1,7 @@
 package tftpConnection;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -19,6 +21,7 @@ public class ErrorSimulator extends TFTPConnection {
     private SocketAddress clientAddress, serverAddress;
     // private String input;
     private int errorSimMode, errorSimBlock, errorSimDelay, errorSimType;
+    private boolean errorSim4OpCode, errorSim4File, errorSim4Mode;
 
     // Class Variable definition finish
 
@@ -91,8 +94,10 @@ public class ErrorSimulator extends TFTPConnection {
 		    simulateDelayPacket(receivePacket, receiveAddress, false);
 		} else if (errorSimMode == 3) {
 		    simulateDuplicatePacket(receivePacket, receiveAddress, false);
+		} else if (errorSimMode == 4) {
+		    simulateInvalidFormat(receivePacket, receiveAddress, false);
 		} else if (errorSimMode == 5) {
-		    simulateUnknownTID(receivePacket, clientAddress, true);
+		    simulateUnknownTID(receivePacket, receiveAddress, false);
 		} else {
 		    send(receivePacket.getData(), mediatorSocket, receiveAddress);
 		}
@@ -129,6 +134,8 @@ public class ErrorSimulator extends TFTPConnection {
 			simulateDelayPacket(initialPacket, clientAddress, true);
 		    } else if (errorSimMode == 3) {
 			simulateDuplicatePacket(initialPacket, clientAddress, true);
+		    } else if (errorSimMode == 4) {
+			simulateInvalidFormat(initialPacket, clientAddress, true);
 		    } else if (errorSimMode == 5) {
 			simulateUnknownTID(initialPacket, clientAddress, true);
 		    } else {
@@ -271,6 +278,55 @@ public class ErrorSimulator extends TFTPConnection {
 
     }
 
+    public void simulateInvalidFormat(DatagramPacket packet, SocketAddress address, boolean firstPass)
+	    throws UnknownHostException {
+
+	if ((TFTPPacket.getBlockNum(packet) == errorSimBlock && TFTPPacket.getType(packet) == errorSimType)
+		|| (firstPass && TFTPPacket.getType(packet) == errorSimType)) {
+	    
+	    print("THIS PACKET WILL BE \n INCORRECTLY FORMATED\n");
+
+	    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+	    try {
+		outputStream.write(ZERO_BYTE);
+		if (errorSim4OpCode)
+		    outputStream.write(ZERO_BYTE);
+		else
+		    outputStream.write(errorSimType);
+
+		if (errorSim4File)
+		    outputStream.write(ZERO_BYTE);
+		else
+		    outputStream.write(packet.getData());
+
+		outputStream.write(ZERO_BYTE);
+		if (errorSim4File)
+		    outputStream.write(ZERO_BYTE);
+		else
+		    outputStream.write(MODE_OCTET);
+		outputStream.write(ZERO_BYTE);
+
+	    } catch (IOException e1) {
+		e1.printStackTrace();
+	    }
+	    
+
+	    if (!firstPass)
+		send(outputStream.toByteArray(), mediatorSocket, address);
+	    else
+		send(outputStream.toByteArray(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
+
+	}
+
+	else {
+	    if (!firstPass)
+		send(packet.getData(), mediatorSocket, address);
+	    else
+		send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
+	}
+
+    }
+
     /**
      * Simulates unkown TID on a specific packet. ( sends the packet to the wrong
      * address )
@@ -295,6 +351,7 @@ public class ErrorSimulator extends TFTPConnection {
 	    errorSimType = -1;
 
 	    int invalidSocketAddress = 0;
+
 	    if (!firstPass)
 		send(packet.getData(), mediatorSocket, null);
 	    else
@@ -326,11 +383,15 @@ public class ErrorSimulator extends TFTPConnection {
      * 
      * @author Eric
      */
-    public void setParameters(int mode, int block, int delay, int type) {
+    public void setParameters(int mode, int block, int delay, int type, boolean opCode, boolean file,
+	    boolean modeSym4) {
 	errorSimMode = mode;
 	errorSimBlock = block;
 	errorSimDelay = delay;
 	errorSimType = type;
+	errorSim4OpCode = opCode;
+	errorSim4File = file;
+	errorSim4Mode = modeSym4;
     }
 
     @Override
