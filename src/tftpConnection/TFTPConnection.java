@@ -127,26 +127,20 @@ public abstract class TFTPConnection {
 		try {
 		    this.send(TFTPPacket.createData(i, sendData), socket, recipientAddress);
 
-		    ackPacket = receiveNext(socket);
+		    do {
+			ackPacket = receive(socket);
+		    } while (!isFrom(ackPacket, socket, recipientAddress) || !isNext(ackPacket));
+
 		    if (TFTPPacket.getType(ackPacket) == TFTPPacket.OP_ERROR) {
 			System.err.println("\nError Occured\n" + TFTPPacket.packetToString(ackPacket));
 			return;
-		    } else if (TFTPPacket.getType(ackPacket) != TFTPPacket.OP_ACK) {
-			println("\nReceived packet was not expected");
-			throw new IllegalArgumentException();
-		    } else if (TFTPPacket.getBlockNum(ackPacket) != i) {
-			println("\nACK for a different Block!");
-			throw new IllegalArgumentException();
 		    }
 
 		    break; // if packet was sent and the apropriate ack was received break out of
 			   // retransmit loop
 		} catch (SocketTimeoutException e) { // default timeout is 2 seconds
-		    if (verbose) {
-			if (j % 50 == 0)
-			    print("\n");
-			print(".");
-		    }
+		    if (verbose)
+			println("Time out");
 		    if (j >= TRANSMIT_LIMIT) {
 			print("Connection timed out \n Stopping transfer");
 			return;
@@ -209,13 +203,12 @@ public abstract class TFTPConnection {
 	    }
 
 	    socket.send(sendPacket);
-
+	    lastSentPkt = sendPacket;
 	} catch (IOException e) {
 	    socket.close();
 	    e.printStackTrace();
 	    System.exit(1);
 	}
-	lastSentPkt = sendPacket;
     }
 
     /**
@@ -271,7 +264,9 @@ public abstract class TFTPConnection {
 		try {
 		    send(TFTPPacket.createAck(data.size()), socket, returnAddress);
 
-		    receivePacket = receiveNext(socket);
+		    do {
+			receivePacket = receive(socket);
+		    } while (!isFrom(receivePacket, socket, returnAddress) || !isNext(receivePacket));
 
 		    if (TFTPPacket.getType(receivePacket) == TFTPPacket.OP_DATA) {
 			data.add(TFTPPacket.getByteData(receivePacket));
@@ -357,8 +352,41 @@ public abstract class TFTPConnection {
 		    || TFTPPacket.getType(receivedPacket) == TFTPPacket.OP_ERROR) {
 		return receivedPacket;
 	    }
-	    println("received wrong packet");
 	}
+    }
+
+    protected boolean isLast(DatagramPacket packet) {
+	if (lastSentPkt == null
+		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_ACK
+			&& TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_DATA
+			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt))
+		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_DATA
+			&& TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_ACK
+			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt) + 1)
+		|| TFTPPacket.getType(packet) == TFTPPacket.OP_ERROR)
+	    return true;
+	return false;
+    }
+    
+    protected boolean isNext(DatagramPacket packet) {
+	if (lastSentPkt == null
+		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_ACK
+			&& TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_DATA
+			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt))
+		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_DATA
+			&& TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_ACK
+			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt) + 1)
+		|| TFTPPacket.getType(packet) == TFTPPacket.OP_ERROR)
+	    return true;
+	return false;
+    }
+
+    protected boolean isFrom(DatagramPacket packet, DatagramSocket socket, SocketAddress expectedSender) {
+	if (packet.getSocketAddress().equals(expectedSender))
+	    return true;
+	send(TFTPPacket.createError(5, "Packet received from an unrecognised TID".getBytes()), socket, packet.getSocketAddress());
+
+	return false;
     }
 
     /**
@@ -471,26 +499,29 @@ public abstract class TFTPConnection {
     }
 
     /**
-     * @author Benjamin
      * @param b
+     * 
+     * @author Benjamin
      */
     public void setScrollBar(JScrollBar b) {
 	this.scrollBar = b;
     }
 
     /**
-     * @author Benjamin Gets textarea attached to child
+     * Gets textarea attached to child
      * 
      * @return
+     * @author Benjamin
      */
     public JTextArea getOutputWindow() {
 	return this.outputWindow;
     }
 
     /**
-     * @author Benjamin Prints to UI and console
+     * Prints to UI and console
      * 
      * @param s
+     * @author Benjamin
      */
     public void print(String s) {
 	System.out.println(s);
@@ -499,9 +530,11 @@ public abstract class TFTPConnection {
     }
 
     /**
-     * @author Benjamin Prints to UI and console
+     * Prints to UI and console
      * 
      * @param s
+     * 
+     * @author Benjamin
      */
     public void println(String s) {
 	System.out.println(s + "\n");

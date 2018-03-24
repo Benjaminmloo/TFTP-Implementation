@@ -67,7 +67,7 @@ public class Client extends TFTPConnection {
 						     * localFile: Local file to be written or read serverFile: File to
 						     * be read or written on the server
 						     */
-	int sendPort = ESIM_PORT; // Error simulator Port #23
+	int sendPort = SERVER_PORT;
 
 	/* Continue execution until exit is issued */
 	while (true) {
@@ -304,7 +304,6 @@ public class Client extends TFTPConnection {
 	try {
 	    Thread.sleep(500);
 	} catch (InterruptedException e) {
-	    // TODO Auto-generated catch block
 	    e.printStackTrace();
 	}
     }
@@ -368,7 +367,6 @@ public class Client extends TFTPConnection {
 	    e.printStackTrace();
 	    System.exit(1);
 	} catch (IOException e) {
-	    // TODO Auto-generated catch block
 	    e.printStackTrace();
 	}
     }

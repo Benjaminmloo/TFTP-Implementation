@@ -15,7 +15,7 @@ import java.net.UnknownHostException;
 public class ErrorSimulator extends TFTPConnection {
 
     // Class Variable definition start
-    private DatagramSocket eSimSocket, mediatorSocket;
+    private DatagramSocket eSimSocket, mediatorSocket, errorSocket;
     private SocketAddress clientAddress, serverAddress;
     // private String input;
     private int errorSimMode, errorSimBlock, errorSimDelay, errorSimType;
@@ -40,10 +40,12 @@ public class ErrorSimulator extends TFTPConnection {
 	this.eSimPort = eSimPort;
 	this.serverPort = serverPort;
 	this.verbose = verbose;
+	clearErrorSim();
+
 	try {
 	    eSimSocket = new DatagramSocket(this.eSimPort);
 	    mediatorSocket = new DatagramSocket();
-
+	    errorSocket = new DatagramSocket();
 	} catch (SocketException e) {
 	    // eSimSocket.close();
 	    // mediatorSocket.close();
@@ -85,14 +87,17 @@ public class ErrorSimulator extends TFTPConnection {
 		    continue;
 		}
 
-		if (errorSimMode == 1) {
-		    simulateLosePacket(receivePacket, receiveAddress, false);
-		} else if (errorSimMode == 2) {
-		    simulateDelayPacket(receivePacket, receiveAddress, false);
-		} else if (errorSimMode == 3) {
-		    simulateDuplicatePacket(receivePacket, receiveAddress, false);
-		} else if (errorSimMode == 5) {
-		    simulateUnknownTID(receivePacket, clientAddress, true);
+		if (errorSimMode > 0 && (TFTPPacket.getBlockNum(receivePacket) == errorSimBlock
+			&& TFTPPacket.getType(receivePacket) == errorSimType)) {
+		    if (errorSimMode == 1) {
+			simulateLosePacket(receivePacket, receiveAddress, false);
+		    } else if (errorSimMode == 2) {
+			simulateDelayPacket(receivePacket, receiveAddress, false);
+		    } else if (errorSimMode == 3) {
+			simulateDuplicatePacket(receivePacket, receiveAddress, false);
+		    } else if (errorSimMode == 5) {
+			simulateUnknownTID(receivePacket, clientAddress, false);
+		    }
 		} else {
 		    send(receivePacket.getData(), mediatorSocket, receiveAddress);
 		}
@@ -121,8 +126,31 @@ public class ErrorSimulator extends TFTPConnection {
 		initialPacket = receive(eSimSocket);
 
 		clientAddress = initialPacket.getSocketAddress();
-
 		try {
+		    if (errorSimMode > 0 && TFTPPacket.getType(initialPacket) == errorSimType) {
+
+			if (errorSimMode == 1) {
+			    simulateLosePacket(initialPacket, clientAddress, true);
+			} else if (errorSimMode == 2) {
+			    simulateDelayPacket(initialPacket, clientAddress, true);
+			} else if (errorSimMode == 3) {
+			    simulateDuplicatePacket(initialPacket, clientAddress, true);
+			} else if (errorSimMode == 5) {
+			    simulateUnknownTID(initialPacket, clientAddress, true);
+			}
+		    } else {
+			send(initialPacket.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
+		    }
+
+		} catch (UnknownHostException e) {
+		    e.printStackTrace();
+		    System.exit(1);
+		}
+		responsePacket = receive(mediatorSocket);
+		serverAddress = responsePacket.getSocketAddress();
+
+		if (errorSimMode > 0 && TFTPPacket.getType(responsePacket) == errorSimType
+			&& TFTPPacket.getBlockNum(responsePacket) == errorSimBlock) {
 		    if (errorSimMode == 1) {
 			simulateLosePacket(initialPacket, clientAddress, true);
 		    } else if (errorSimMode == 2) {
@@ -131,19 +159,10 @@ public class ErrorSimulator extends TFTPConnection {
 			simulateDuplicatePacket(initialPacket, clientAddress, true);
 		    } else if (errorSimMode == 5) {
 			simulateUnknownTID(initialPacket, clientAddress, true);
-		    } else {
-			send(initialPacket.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
 		    }
-
-		} catch (UnknownHostException e) {
-		    eSimSocket.close();
-		    mediatorSocket.close();
-		    e.printStackTrace();
+		} else {
+		    send(responsePacket.getData(), mediatorSocket, clientAddress);
 		}
-		responsePacket = receive(mediatorSocket);
-		serverAddress = responsePacket.getSocketAddress();
-		send(responsePacket.getData(), mediatorSocket, clientAddress);
-
 		if (TFTPPacket.getType(responsePacket) == TFTPPacket.OP_ERROR)
 		    continue;
 		println("starting mediation");
@@ -172,21 +191,8 @@ public class ErrorSimulator extends TFTPConnection {
     public void simulateLosePacket(DatagramPacket packet, SocketAddress address, boolean firstPass)
 	    throws UnknownHostException {
 
-	if ((TFTPPacket.getBlockNum(packet) == errorSimBlock && TFTPPacket.getType(packet) == errorSimType)
-		|| (firstPass && TFTPPacket.getType(packet) == errorSimType)) {
-
-	    print("THIS PACKET WILL BE LOST\n");
-	    errorSimBlock = -1;
-	    errorSimType = -1;
-	    // packet is not sent
-	}
-
-	else {
-	    if (!firstPass)
-		send(packet.getData(), mediatorSocket, address);
-	    else
-		send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
-	}
+	print("THIS PACKET WILL BE LOST\n");
+	clearErrorSim();
 
     }
 
@@ -205,26 +211,17 @@ public class ErrorSimulator extends TFTPConnection {
     public void simulateDelayPacket(DatagramPacket packet, SocketAddress address, boolean firstPass)
 	    throws UnknownHostException {
 
-	if ((TFTPPacket.getBlockNum(packet) == errorSimBlock && TFTPPacket.getType(packet) == errorSimType)
-		|| (firstPass && TFTPPacket.getType(packet) == errorSimType)) {
+	print("THIS PACKET WILL BE DELAYED\n");
 
-	    print("THIS PACKET WILL BE DELAYED\n");
-
-	    // delay the packet
-	    try {
-		errorSimMode = -1;
-		errorSimBlock = -1;
-		errorSimType = -1;
-		Thread.sleep(errorSimDelay);
-	    } catch (InterruptedException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	    }
+	// delay the packet
+	try {
+	    clearErrorSim();
+	    Thread.sleep(errorSimDelay);
+	} catch (InterruptedException e) {
+	    // TODO Auto-generated catch block
+	    e.printStackTrace();
 	}
-	if (!firstPass)
-	    send(packet.getData(), mediatorSocket, address);
-	else
-	    send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
+
     }
 
     /**
@@ -242,32 +239,20 @@ public class ErrorSimulator extends TFTPConnection {
     public void simulateDuplicatePacket(DatagramPacket packet, SocketAddress address, boolean firstPass)
 	    throws UnknownHostException {
 
-	if ((TFTPPacket.getBlockNum(packet) == errorSimBlock && TFTPPacket.getType(packet) == errorSimType)
-		|| (firstPass && TFTPPacket.getType(packet) == errorSimType)) {
+	clearErrorSim();
+	print("THIS PACKET WILL BE DUPLICATED\n");
+	send(packet.getData(), mediatorSocket, address);
 
-	    errorSimBlock = -1;
-	    errorSimType = -1;
-
-	    print("THIS PACKET WILL BE DUPLICATED\n");
-
-	    send(packet.getData(), mediatorSocket, address);
-
-	    // delay the packet
-	    try {
-		Thread.sleep(errorSimDelay);
-	    } catch (InterruptedException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	    }
-
-	    send(packet.getData(), mediatorSocket, address);
-
-	} else {
-	    if (!firstPass)
-		send(packet.getData(), mediatorSocket, address);
-	    else
-		send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
+	// delay the packet
+	try {
+	    Thread.sleep(errorSimDelay);
+	} catch (InterruptedException e) {
+	    // TODO Auto-generated catch block
+	    e.printStackTrace();
 	}
+
+	send(packet.getData(), mediatorSocket, address);
+	clearErrorSim();
 
     }
 
@@ -287,23 +272,18 @@ public class ErrorSimulator extends TFTPConnection {
     public void simulateUnknownTID(DatagramPacket packet, SocketAddress address, boolean firstPass)
 	    throws UnknownHostException {
 
-	if ((TFTPPacket.getBlockNum(packet) == errorSimBlock && TFTPPacket.getType(packet) == errorSimType)
-		|| (firstPass && TFTPPacket.getType(packet) == errorSimType)) {
+	print("SIMULATING UNKNOWN TID\n");
+	clearErrorSim();
 
-	    print("SIMULATING UNKNOWN TID\n");
-	    errorSimBlock = -1;
-	    errorSimType = -1;
+	if (!firstPass)
+	    send(packet.getData(), errorSocket, address);
+	else
+	    send(packet.getData(), errorSocket, InetAddress.getLocalHost(), serverPort);
 
-	    int invalidSocketAddress = 0;
-	    if (!firstPass)
-		send(packet.getData(), mediatorSocket, null);
-	    else
-		send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), invalidSocketAddress);
-	} else {
-	    if (!firstPass)
-		send(packet.getData(), mediatorSocket, address);
-	    else
-		send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
+	try {
+	    receive(errorSocket);
+	} catch (SocketTimeoutException e) {
+	    e.printStackTrace();
 	}
 
     }
@@ -336,6 +316,10 @@ public class ErrorSimulator extends TFTPConnection {
     @Override
     public void takeInput(String s) {
 	// input += s;
+    }
+
+    void clearErrorSim() {
+	setParameters(-1, -1, -1, -1);
     }
 
     /**
