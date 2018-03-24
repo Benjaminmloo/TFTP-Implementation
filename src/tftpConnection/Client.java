@@ -198,7 +198,7 @@ public class Client extends TFTPConnection {
 				    /*
 				     * Choose testing Type
 				     */
-				    print("Test Type : LOSE_PACKET(1), DELAY_PACKET(2), DUPLICATE_PACKET (3): ");
+				    print("Test Type : LOSE_PACKET(1), DELAY_PACKET(2), DUPLICATE_PACKET (3), UNKNOWN_TID (5): ");
 				    while (input == null) {
 					try {
 					    wait();
@@ -223,7 +223,13 @@ public class Client extends TFTPConnection {
 					getPacketErrorSimBlock();
 					getPacketErrorSimType();
 					getPacketSimDelay();
-
+					
+				    } else if (input.equals("5")) { // Simulate unknown TID
+					errorSimMode = 5;
+					getPacketErrorSimBlock();
+					getPacketErrorSimType();
+					
+					
 				    } else {
 					throw new InputMismatchException();
 				    }

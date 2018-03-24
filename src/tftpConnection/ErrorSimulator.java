@@ -67,7 +67,7 @@ public class ErrorSimulator extends TFTPConnection {
      * initiated. exits when file transfer is complete
      * 
      * @author BLoo, Eric
-     * @throws UnknownHostException 
+     * @throws UnknownHostException
      */
     void mediateTransfer() throws UnknownHostException {
 	DatagramPacket receivePacket = null, lastPacket = null;
@@ -86,11 +86,13 @@ public class ErrorSimulator extends TFTPConnection {
 		}
 
 		if (errorSimMode == 1) {
-		    simulateLosePacket(receivePacket, receiveAddress,false);
+		    simulateLosePacket(receivePacket, receiveAddress, false);
 		} else if (errorSimMode == 2) {
-		    simulateDelayPacket(receivePacket, receiveAddress,false);
+		    simulateDelayPacket(receivePacket, receiveAddress, false);
 		} else if (errorSimMode == 3) {
-		    simulateDuplicatePacket(receivePacket, receiveAddress,false);
+		    simulateDuplicatePacket(receivePacket, receiveAddress, false);
+		} else if (errorSimMode == 5) {
+		    simulateUnknownTID(receivePacket, clientAddress, true);
 		} else {
 		    send(receivePacket.getData(), mediatorSocket, receiveAddress);
 		}
@@ -127,10 +129,12 @@ public class ErrorSimulator extends TFTPConnection {
 			simulateDelayPacket(initialPacket, clientAddress, true);
 		    } else if (errorSimMode == 3) {
 			simulateDuplicatePacket(initialPacket, clientAddress, true);
+		    } else if (errorSimMode == 5) {
+			simulateUnknownTID(initialPacket, clientAddress, true);
 		    } else {
 			send(initialPacket.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
 		    }
-		    
+
 		} catch (UnknownHostException e) {
 		    eSimSocket.close();
 		    mediatorSocket.close();
@@ -158,9 +162,10 @@ public class ErrorSimulator extends TFTPConnection {
      *            - data packet address
      * 
      * @author Eric
-     * @throws UnknownHostException 
+     * @throws UnknownHostException
      */
-    public void simulateLosePacket(DatagramPacket packet, SocketAddress address, boolean firstPass) throws UnknownHostException {
+    public void simulateLosePacket(DatagramPacket packet, SocketAddress address, boolean firstPass)
+	    throws UnknownHostException {
 
 	if ((TFTPPacket.getBlockNum(packet) == errorSimBlock && TFTPPacket.getType(packet) == errorSimType)
 		|| (firstPass && TFTPPacket.getType(packet) == errorSimType)) {
@@ -172,8 +177,10 @@ public class ErrorSimulator extends TFTPConnection {
 	}
 
 	else {
-	    if (!firstPass) send(packet.getData(), mediatorSocket, address);
-	    else send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
+	    if (!firstPass)
+		send(packet.getData(), mediatorSocket, address);
+	    else
+		send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
 	}
 
     }
@@ -188,9 +195,10 @@ public class ErrorSimulator extends TFTPConnection {
      *            - data packet address
      * 
      * @author Eric
-     * @throws UnknownHostException 
+     * @throws UnknownHostException
      */
-    public void simulateDelayPacket(DatagramPacket packet, SocketAddress address, boolean firstPass) throws UnknownHostException {
+    public void simulateDelayPacket(DatagramPacket packet, SocketAddress address, boolean firstPass)
+	    throws UnknownHostException {
 
 	if ((TFTPPacket.getBlockNum(packet) == errorSimBlock && TFTPPacket.getType(packet) == errorSimType)
 		|| (firstPass && TFTPPacket.getType(packet) == errorSimType)) {
@@ -208,8 +216,10 @@ public class ErrorSimulator extends TFTPConnection {
 		e.printStackTrace();
 	    }
 	}
-	if (!firstPass) send(packet.getData(), mediatorSocket, address);
-	else send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
+	if (!firstPass)
+	    send(packet.getData(), mediatorSocket, address);
+	else
+	    send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
     }
 
     /**
@@ -222,9 +232,10 @@ public class ErrorSimulator extends TFTPConnection {
      *            - data packet address
      * 
      * @author Eric
-     * @throws UnknownHostException 
+     * @throws UnknownHostException
      */
-    public void simulateDuplicatePacket(DatagramPacket packet, SocketAddress address, boolean firstPass) throws UnknownHostException {
+    public void simulateDuplicatePacket(DatagramPacket packet, SocketAddress address, boolean firstPass)
+	    throws UnknownHostException {
 
 	if ((TFTPPacket.getBlockNum(packet) == errorSimBlock && TFTPPacket.getType(packet) == errorSimType)
 		|| (firstPass && TFTPPacket.getType(packet) == errorSimType)) {
@@ -247,8 +258,49 @@ public class ErrorSimulator extends TFTPConnection {
 	    send(packet.getData(), mediatorSocket, address);
 
 	} else {
-	    if (!firstPass) send(packet.getData(), mediatorSocket, address);
-	    else send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
+	    if (!firstPass)
+		send(packet.getData(), mediatorSocket, address);
+	    else
+		send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
+	}
+
+    }
+
+    /**
+     * Simulates unkown TID on a specific packet. ( sends the packet to the wrong address )
+     * 
+     * @param packet
+     *            - Datagram packet
+     * 
+     * @param address
+     *            - data packet address
+     * 
+     * @author Eric
+     * @throws UnknownHostException
+     */
+    public void simulateUnknownTID(DatagramPacket packet, SocketAddress address, boolean firstPass)
+	    throws UnknownHostException {
+
+	if ((TFTPPacket.getBlockNum(packet) == errorSimBlock && TFTPPacket.getType(packet) == errorSimType)
+		|| (firstPass && TFTPPacket.getType(packet) == errorSimType)) {
+
+	    print("SIMULATING UNKNOWN TID\n");
+	    errorSimBlock = -1;
+	    errorSimType = -1;
+
+	    int invalidSocketAddress = 0;
+	    if (!firstPass)
+		send(packet.getData(), mediatorSocket, null);
+	    else
+		send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), invalidSocketAddress);
+
+	}
+
+	else {
+	    if (!firstPass)
+		send(packet.getData(), mediatorSocket, address);
+	    else
+		send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
 	}
 
     }
