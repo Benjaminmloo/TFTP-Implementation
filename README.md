@@ -2,7 +2,7 @@
 
 Project: Design and Implementation of file transfer system based on the TFTP
 System consist of TFTP client - error - server.
-@author: Loo Ben, Nguyen Andrew, Morrissette Eric, Palko Ben, Westeinde Johan
+@author: Loo Ben, Nguyen Andrew, Morrissette Eric, Palko Ben
 
 
 ITERATION 1 w/ ITERATION 0

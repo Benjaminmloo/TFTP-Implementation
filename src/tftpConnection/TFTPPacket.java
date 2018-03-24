@@ -1,11 +1,16 @@
 package tftpConnection;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.net.DatagramPacket;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class TFTPPacket {
 
@@ -102,7 +107,39 @@ public abstract class TFTPPacket {
 	}
 	return Arrays.copyOfRange(data, 0, index - offset);
     }
-
+    
+    private static void checkPacket(DatagramPacket packet) throws IOException
+    {
+	byte[] data = packet.getData();
+	int size = packet.getLength();
+	byte zero = 0;
+	Set<Byte> validPackets = PacketTypes.keySet();
+	if( data[0] == zero && validPackets.contains(data[1]) ) //Checks packet type formatting
+	{
+	    switch (data[1])
+	    {
+	    case (byte)1:
+	    case (byte)2:
+	    case (byte)3:
+	    {
+		if(data[size + 1] == zero)
+			if(data[-1] == zero)
+			    return;
+		break;
+	    }
+	    case (byte)4:
+	    {
+		
+	    }
+	    case (byte)5:
+	    {
+		
+	    }
+	    }
+	    
+	}
+	throw new IOException();
+    }
     /**
      * Converts byte[] to string using utf-8 encoding when available uses default
      * when utf-8 isn't available

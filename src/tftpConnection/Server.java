@@ -44,6 +44,7 @@ public class Server extends TFTPConnection {
     }
 
     /**
+     * 
      * methods the manages packet being received
      * 
      * sends any received packets to be processed by another method
@@ -54,7 +55,7 @@ public class Server extends TFTPConnection {
      * 
      * @author bloo
      */
-
+    @Deprecated
     public synchronized void userInterface() {
 	byte operation;
 

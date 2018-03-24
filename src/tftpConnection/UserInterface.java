@@ -6,6 +6,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.net.Inet4Address;
 
 import javax.swing.*;
 import javax.swing.text.DefaultCaret;
@@ -21,7 +22,7 @@ public class UserInterface {
     private JTextField inputField;
     private JTabbedPane tabPane, tabPane2, tabPane3;
 
-    private Client client;
+    public Client client;
     private ErrorSimulator errorSim;
     private Server server;
 
@@ -30,6 +31,9 @@ public class UserInterface {
     private JPanel outputPanel, inputPanel, subOutputPanel;
 
     DefaultCaret caret;
+    
+    private Inet4Address serverAddress;
+    
 
     public UserInterface() {
 	errorSim = new ErrorSimulator();
@@ -38,6 +42,14 @@ public class UserInterface {
 
 	frame = new JFrame("File Transfer System");
 	frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	
+	MenuListener menuListener = new MenuListener();
+	JMenuBar menuBar = new JMenuBar();
+	JMenu fileMenu = new JMenu("File");
+	menuBar.add(fileMenu);
+	JMenuItem editServer = new JMenuItem("Edit Server IP");
+	editServer.addActionListener(menuListener);
+	fileMenu.add(editServer);
 
 	tabPane = new JTabbedPane();
 	tabPane2 = new JTabbedPane();
@@ -80,7 +92,7 @@ public class UserInterface {
 	tabPane3.add("Server", serverWindow);
 
 	/*
-	 * Since it is a gridLayout, it'll always be symetrical. A SubOutputPanel is
+	 * Since it is a gridLayout, it'll always be symmetrical. A SubOutputPanel is
 	 * made for error and server to reduce The size of the window and give the
 	 * attention onto the Client window.
 	 */
@@ -102,15 +114,18 @@ public class UserInterface {
 	inputPanel.add(new JLabel("Input commands here: "));
 	inputPanel.add(inputField);
 
-	// The old interface if we want to revert back.
-	// outputPanel.setLayout(new BoxLayout(outputPanel, BoxLayout.Y_AXIS));
+	/* The old interface if we want to revert back.
+ 	outputPanel.setLayout(new BoxLayout(outputPanel, BoxLayout.Y_AXIS));
 
-	// outputPanel.add(tabPane, gbc);
-	// outputPanel.add(new JLabel("Input commands here: "), gbc);
-	// outputPanel.add(inputField, gbc);
+	outputPanel.add(tabPane, gbc);
+	outputPanel.add(new JLabel("Input commands here: "), gbc);
+	outputPanel.add(inputField, gbc); 
+	*/
 
+	frame.setJMenuBar(menuBar);
 	frame.add(outputPanel, BorderLayout.CENTER);
 	frame.add(inputPanel, BorderLayout.SOUTH);
+	
 
 	frame.pack();
 	frame.setVisible(true);
@@ -126,21 +141,8 @@ public class UserInterface {
     }
 
     private void forwardInput(String s) {
-	switch (tabPane.getSelectedIndex()) {
-	case 0:
-	    client.getOutputWindow().append(s + "\n");
-	    client.takeInput(s);
-	    break;
-	case 1:
-	    errorSim.getOutputWindow().append(s + "\n");
-	    errorSim.takeInput(s);
-	    break;
-	case 2:
-	    server.getOutputWindow().append(s + "\n");
-	    server.takeInput(s);
-
-	    break;
-	}
+	client.getOutputWindow().append(s + "\n");
+	client.takeInput(s);
     }
 
     public void requestInputFocus() {
@@ -190,9 +192,26 @@ public class UserInterface {
 	    } else if (connection instanceof ErrorSimulator) {
 		((ErrorSimulator) connection).startPassthrough();
 	    } else if (connection instanceof Server) {
-		((Server) connection).userInterface();
+		/* <<DEPRECATED>> ((Server) connection).userInterface();*/
 	    }
 	}
 
+    }
+    public class MenuListener implements ActionListener
+    {
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+	    JMenuItem item = (JMenuItem) e.getSource();
+	    
+	    switch (item.getText())
+	    {
+	    	case "Edit Server IP":
+	    	    String in = (String)JOptionPane.showInputDialog(frame, "Enter new address Current address " + serverAddress);
+	    	    
+	    }
+	}
+	
+	
     }
 }
