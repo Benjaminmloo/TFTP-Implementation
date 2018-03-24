@@ -4,20 +4,16 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.swing.JScrollBar;
 import javax.swing.JTextArea;
@@ -184,7 +180,7 @@ public abstract class TFTPConnection {
      * @param socket
      *            - socket that will be used to send packet
      * @param address
-     *            - address the packet will be send too
+     *            - address the packet will be sent too
      * @param port
      *            - port the packet will be send too
      * 
@@ -298,8 +294,8 @@ public abstract class TFTPConnection {
 		    }
 		}
 	    }
-	} while (receivePacket == null
-		|| (TFTPPacket.getType(receivePacket) != TFTPPacket.OP_DATA ^ TFTPPacket.getDataLength(receivePacket) == MAX_DATA_SIZE));
+	} while (receivePacket == null || (TFTPPacket.getType(receivePacket) != TFTPPacket.OP_DATA
+		^ TFTPPacket.getDataLength(receivePacket) == MAX_DATA_SIZE));
 
 	send(TFTPPacket.createAck(data.size()), socket, returnAddress);
 	// continue if the last received packet hold data and are full
@@ -309,8 +305,9 @@ public abstract class TFTPConnection {
     }
 
     /**
-     * receives the next in order packet
-     * allows for the rejection of incorrect packets
+     * receives the next in order packet allows for the rejection of incorrect
+     * packets
+     * 
      * @param socket
      *            - socket the packet will be received on
      * @param length
@@ -325,8 +322,9 @@ public abstract class TFTPConnection {
     }
 
     /**
-     * receives the next in order packet
-     * allows for the rejection of incorrect packets
+     * receives the next in order packet allows for the rejection of incorrect
+     * packets
+     * 
      * @param socket
      *            - socket the packet will be received on
      * @param length
@@ -350,9 +348,11 @@ public abstract class TFTPConnection {
 	     */
 
 	    if (lastSentPkt == null
-		    || (TFTPPacket.getType(receivedPacket) == TFTPPacket.OP_ACK && TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_DATA
+		    || (TFTPPacket.getType(receivedPacket) == TFTPPacket.OP_ACK
+			    && TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_DATA
 			    && TFTPPacket.getBlockNum(receivedPacket) == TFTPPacket.getBlockNum(lastSentPkt))
-		    || (TFTPPacket.getType(receivedPacket) == TFTPPacket.OP_DATA && TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_ACK
+		    || (TFTPPacket.getType(receivedPacket) == TFTPPacket.OP_DATA
+			    && TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_ACK
 			    && TFTPPacket.getBlockNum(receivedPacket) == TFTPPacket.getBlockNum(lastSentPkt) + 1)
 		    || TFTPPacket.getType(receivedPacket) == TFTPPacket.OP_ERROR) {
 		return receivedPacket;

@@ -97,9 +97,9 @@ public class ErrorSimulator extends TFTPConnection {
 		    send(receivePacket.getData(), mediatorSocket, receiveAddress);
 		}
 
-		if (lastPacket != null && TFTPPacket.getType(receivePacket) == TFTPPacket.OP_ERROR
-			&& TFTPPacket.getType(lastPacket) == TFTPPacket.OP_DATA
-			&& TFTPPacket.getDataLength(lastPacket) < MAX_DATA_SIZE)
+		if (TFTPPacket.getType(receivePacket) == TFTPPacket.OP_ERROR
+			|| lastPacket != null && TFTPPacket.getType(lastPacket) == TFTPPacket.OP_DATA
+				&& TFTPPacket.getDataLength(lastPacket) < MAX_DATA_SIZE)
 		    break;
 
 	    } catch (SocketTimeoutException e) {
@@ -143,7 +143,12 @@ public class ErrorSimulator extends TFTPConnection {
 		responsePacket = receive(mediatorSocket);
 		serverAddress = responsePacket.getSocketAddress();
 		send(responsePacket.getData(), mediatorSocket, clientAddress);
+
+		if (TFTPPacket.getType(responsePacket) == TFTPPacket.OP_ERROR)
+		    continue;
+		println("starting mediation");
 		mediateTransfer();
+		println("ending mediation");
 
 	    } catch (SocketTimeoutException | UnknownHostException e1) {
 		e1.printStackTrace();
@@ -267,7 +272,8 @@ public class ErrorSimulator extends TFTPConnection {
     }
 
     /**
-     * Simulates unkown TID on a specific packet. ( sends the packet to the wrong address )
+     * Simulates unkown TID on a specific packet. ( sends the packet to the wrong
+     * address )
      * 
      * @param packet
      *            - Datagram packet
@@ -293,10 +299,7 @@ public class ErrorSimulator extends TFTPConnection {
 		send(packet.getData(), mediatorSocket, null);
 	    else
 		send(packet.getData(), mediatorSocket, InetAddress.getLocalHost(), invalidSocketAddress);
-
-	}
-
-	else {
+	} else {
 	    if (!firstPass)
 		send(packet.getData(), mediatorSocket, address);
 	    else
