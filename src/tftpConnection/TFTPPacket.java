@@ -108,7 +108,7 @@ public abstract class TFTPPacket {
 	return Arrays.copyOfRange(data, 0, index - offset);
     }
     
-    private static void checkPacket(DatagramPacket packet) throws IOException
+    public static void checkPacket(DatagramPacket packet) throws IOException
     {
 	byte[] data = packet.getData();
 	int size = packet.getLength();
