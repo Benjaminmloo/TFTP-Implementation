@@ -485,7 +485,7 @@ public abstract class TFTPConnection {
      * @author Eric
      */
     protected int saveFile(ArrayList<byte[]> data, String fileName) throws IOException {
-	if (new File(fileName).getUsableSpace() < data.size() * 512)
+	if (new File(new File(fileName).getParent()).getUsableSpace() < data.size() * 512)
 	    throw new FullFileSystemException("File " + fileName + "cannot fit the file's " + data.size() * 512
 		    + "bytes. File has space " + new File(fileName).getUsableSpace());
 	OutputStream file = new FileOutputStream(fileName);
