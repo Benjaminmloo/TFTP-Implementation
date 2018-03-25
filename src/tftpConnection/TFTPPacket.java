@@ -105,7 +105,7 @@ public abstract class TFTPPacket {
 	return Arrays.copyOfRange(data, 0, index - offset);
     }
     
-    private static void checkPacket(DatagramPacket packet) throws IOException
+    public static void checkPacket(DatagramPacket packet) throws IOException
     {
 	byte[] data = packet.getData();
 	int size = packet.getLength();
@@ -113,26 +113,10 @@ public abstract class TFTPPacket {
 	Set<Byte> validPackets = PacketTypes.keySet();
 	if( data[0] == zero && validPackets.contains(data[1]) ) //Checks packet type formatting
 	{
-	    switch (data[1])
-	    {
-	    case (byte)1:
-	    case (byte)2:
-	    case (byte)3:
-	    {
-		if(data[size + 1] == zero)
-			if(data[-1] == zero)
-			    return;
-		break;
-	    }
-	    case (byte)4:
-	    {
-		
-	    }
-	    case (byte)5:
-	    {
-		
-	    }
-	    }
+	    if(data[size + 1] == zero)
+		if(data[-1] == zero)
+		    return;
+	    
 	    
 	}
 	throw new IOException();
