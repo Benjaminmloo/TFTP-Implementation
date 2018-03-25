@@ -1,12 +1,181 @@
-/** READ ME FILE
-*
-* Project: Design and Implementation of file transfer system based on the TFTP
-* System consist of TFTP client - error - server.
-*
-* @author: Loo Ben, Nguyen Andrew, Morrissette Eric, Palko Ben
-* 
-*/
+README FILE
 
+(Last Update: March 24th, 2018)
+
+Personal Note: Ctrl+F (,) 
+Anything with (,) may be changed or updated in the future iterations
+Delete (,) on the final submission
+*************************************************************************************************
+*************************************************************************************************
+
+PROJECT OBJECTIVE
+======================================== 
+Design and Implementation of file transfer system based on the TFTP - RFC 1350
+System will consist of TFTP client(s) running on multiplie computers act as multithread for a server.
+There will be an error simulator that'll be handling errors between the transmission.
+
+
+AUTHOR
+========================================
+Loo Ben, Nguyen Andrew, Morrissette Eric, Palko Ben
+
+
+Contribution (,)
+========================================
+Loo Ben: Client*, ErrorSimulator, Server*, TFTPConnection*, TFTPPacket, ThreadedConnection
+Nguyen Andrew: FinalProject Doc*, Diagrams*, READ_ME.txt*, Client, TFTPConnection, UserInterface
+Morrissette Eric: Client*, ErrorSimulator*, TFTPConnection, TFTPPacket, ThreadedConnection, Trello* 
+Palko Ben: Client, Server, ThreadedConnection*, TFTPConnection, UserInterface*, Trello
+
+Anything with "*" is the main focus of the individual's contribution
+Everyone did abit of everything: We all did our best to contribute what we can.
+
+FILES (,)
+========================================
+Source Files:
+src/tftpConnection/Client.java
+src/tftpConnection/ErrorSimulator.java
+src/tftpConnection/Server.java
+src/tftpConnection/TFTPConnection.java
+src/tftpConnection/TFTPPacket.java
+src/tftpConnection/ThreadedConnection.java
+src/tftpConnection/UserInterface.java
+
+
+MISC FILES (,)
+========================================
+SYSC_3310_Final_Project.docx
+project.pdf
+Test_Table.docx
+Timing_Diagram_Error_1_2_3_6.docx
+UCM_TFTP.docx
+UML_TFTP.png
+test.txt
+
+
+EXECUTION STEP INSTRUCTION (,)
+========================================
+
+Running the application:
+1. Run the UserInterface class (You don't have to run the classes separately any more).
+	- A new window should open up
+	- It'll ask for input commands
+
+2. Select one of the four input commands (RRQ(1), WRQ(2), settings(3), quit(4)).
+	- If (1) or (2) is selected (continue on to "Step 3").
+	- If (3) is selected (jump to "Step 6").
+	- If (4) is selected, the application is done ("Jump to Step 9").
+
+3. Input file to Read/Write on client (eg: "src\\test.txt").
+	- Press Enter.
+	
+4. Input file destination on server (eg: "Misc\\test.txt").
+	- Press Enter.
+	- Packet should be transferring back and fourth between client and server.
+	- Information will be shown on each class tab in User Interface.
+	- If it's Read, ACK will be sent and server will send DATA back.
+	- If it's Write. Data will be sent and server will send ACK back.
+	
+5. Once it is done, you can start again (Go back to "Step 2").
+
+6. Setting(3) - User Interface will ask for an input for Verbose (eg: "true/false").
+	- If (true), User Interface will show and trace the packets being sent back and fourth.
+	- If (false), file transfer will be hidden.
+	
+7. User Interface will ask for an input for Testing (eg: "true/false").
+	- If (true), the packet will transmit with ErrorSimulator.
+		7.1: Instructions will prompt and ask for what error handling the user would like to see. (,)
+			 Please follow the instruction it is shown in the interface.
+			 (eg: Verbose > TypeOfError > Blk# > Type > Speed > TypeOfData  > (Go back to “Step 2)) 
+		
+	- If (false), the packet will ignore ErrorSimulator. Client will send and receive directly to/from Server.
+	
+8. User Interface will jump back to the main four input commands (Go back to "Step 2").
+
+9. Close the User Interface Window.
+
+END
+
+MOST LIKELY WON'T BE USING THIS ANYMORE (,)
+Running the Test:
+1. First check if computer is running JUnit 4 or JUnit 5.
+
+2. Right click tftpConnectionTEST > Run As > JUnit Test.
+
+3. Testing was done manually.
+
+
+UPDATE NOTES: (,)
+========================================
+*************************************************************************************************
+*************************************************************************************************
+March 24th, 2018
+ITERATION 4th
+
+Setup Instruction
+========================================
+To start the program run through the UserInterface class, input is tied to your current tab (Client tab will send client input etc.)
+Testing Classes - Make it runs independently( Without the Client-Server running since it makes its own Mock Server)
+
+
+Class files: Client, ErrorSimulator, Server, ThreadedConnection, TFTPConnection, User Interface
+clientTest, errorSimulator, serverTest, tftpConnectionTest; .java
+
+Class Updates 
+========================================
+- Error Simulation now checks for Error Code 4 and 5
+- TFTPConnection and ThreadedConnection handles the error
+- UserInterface has been updated
+
+
+ErrorSimulator
+========================================
+- Method created to handle Error Code 4 IllegalTFTP Packet
+- Method created to handle Error Code 5 Unknown Packet
+
+
+TFTPConnection
+========================================
+- Modified method to handle error codes 4 and 5
+
+
+UserInterface
+========================================
+- Polished the UI
+- New interface to show Client, Error, Server transfering packets concurrently
+
+Diagrams
+========================================
+- Added Timing Diagram for Error Code 4 and 5
+
+
+*************************************************************************************************
+*************************************************************************************************
+March 10th, 2018
+ITERATION 3
+
+Setup Instruction
+========================================
+To start the program run through the UserInterface class, input is tied to your current tab (Client tab will send client input etc.)
+Testing Classes - Make it runs independently( Without the Client-Server running since it makes its own Mock Server)
+
+
+Class files: Client, ErrorSimulator, Server, ThreadedConnection, TFTPConnection, User Interface
+clientTest, errorSimulator, serverTest, tftpConnectionTest; .java
+
+Class Updates 
+========================================
+- Adding in Network Error Check. (Timeout, Duplicates, Acknowledgement0 Check, Retransmit)
+- Refactor and simplified the classes for better understanding
+- More Testing!!!
+
+Diagrams
+========================================
+- Updated UCM, UML, Timing Diagram (Different Scenario depending on errors and sorcerer's apprentice bug)
+
+
+
+*************************************************************************************************
 *************************************************************************************************
 Feb 17th, 2018
 ITERATION 2
@@ -14,8 +183,8 @@ ITERATION 2
 Setup Instruction
 ========================================
 To start the program run through the UserInterface class, input is tied to your current tab (Client tab will send client input etc.)
-
 Testing Classes - Make it runs independently( Without the Client-Server running since it makes its own Mock Server)
+
 
 Class files: Client, ErrorSimulator, Server, ThreadedConnection, TFTPConnection, User Interface
 clientTest, errorSimulator, serverTest, tftpConnectionTest; .java
@@ -34,7 +203,7 @@ UserInterface
 - Have 3 classes, each having it's own tab. Switching between them will also switch the input destination to the respective tabs class
 
 
-
+*************************************************************************************************
 *************************************************************************************************
 Feb 3rd, 2018
 ITERATION 1 w/ ITERATION 0
@@ -57,7 +226,6 @@ Iteration 0
 - Shutdown implementation
 Iteration 1
 - Support Steady State file transfer
-
 
 
 ErrorSimulator Class
@@ -100,10 +268,3 @@ UDPConnection Class
 - Sends Packet to Port Location
 - Receive Packet from Port Location
 - Packet to String
-
-Contribution
-========================================
-Loo Ben: Error Simulator, Server, UDPConnection, TFTPConnection
-Nguyen Andrew: UML, UCM, READ_ME, Testing Classes, Client
-Morrissette Eric: Client, Trello
-Palko Ben: Server, Threaded Connection, Trello, UserInterface

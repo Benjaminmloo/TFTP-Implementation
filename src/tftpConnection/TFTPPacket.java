@@ -40,7 +40,7 @@ public abstract class TFTPPacket {
      * @author bloo
      */
     public static byte[] createAck(int blockNum) {
-	byte[] ack = new byte[] { 0, 4, (byte) (blockNum / 256), (byte) (blockNum % 256) };
+	byte[] ack = new byte[] { 0, OP_ACK, (byte) (blockNum / 256), (byte) (blockNum % 256) };
 	return ack;
     }
 
@@ -75,7 +75,7 @@ public abstract class TFTPPacket {
     public static byte[] createError(int error, byte[] msg) {
 	byte[] packet = new byte[4 + msg.length];
 	ByteBuffer dBuff = ByteBuffer.wrap(packet);
-	dBuff.put(new byte[] { 0, 5, (byte) (error / 256), (byte) (error % 256) });
+	dBuff.put(new byte[] { 0, OP_ERROR, (byte) (error / 256), (byte) (error % 256) });
 	dBuff.put(msg);
 	return packet;
     }
@@ -108,6 +108,13 @@ public abstract class TFTPPacket {
 	return Arrays.copyOfRange(data, 0, index - offset);
     }
     
+    /**
+     * Authenticates packet
+     * 
+     * @author Benjamin
+     * @param packet
+     * @throws IOException
+     */
     public static void checkPacket(DatagramPacket packet) throws IOException
     {
 	byte[] data = packet.getData();
@@ -116,9 +123,35 @@ public abstract class TFTPPacket {
 	Set<Byte> validPackets = PacketTypes.keySet();
 	if( data[0] == zero && validPackets.contains(data[1]) ) //Checks packet type formatting
 	{
-	    if(data[size + 1] == zero)
-		if(data[-1] == zero)
-		    return;
+	    switch(data[1])
+	    {
+	    case (byte)1:
+	    case (byte)2: /*	RRQ & WRQ Packet */	
+	    {
+		if(data[size + 1] == zero)
+			if(data[-1] == zero)
+			    return;
+		break;
+	    }
+	    case (byte)3: /*	DATA Packet */
+	    {
+		if(data[3] == zero)
+		    break;
+		return;
+	    }
+	    case (byte)4: /*	ACK Packet */
+	    {
+		if(data[3] == zero)
+		    break;
+		return;
+	    }
+	    case (byte)5: /*	ERROR Packet */
+	    {
+		if(data[3] == zero)
+		    break;
+		return;
+	    }
+	    }
 	    
 	    
 	}
