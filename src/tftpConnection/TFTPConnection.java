@@ -129,6 +129,10 @@ public abstract class TFTPConnection {
 
 		    do {
 			ackPacket = receive(socket);
+			if(isLast(ackPacket)) {
+			    send(lastSentPkt, socket);
+			    continue;
+			}
 		    } while (!isFrom(ackPacket, socket, recipientAddress) || !isNext(ackPacket));
 
 		    if (TFTPPacket.getType(ackPacket) == TFTPPacket.OP_ERROR) {
@@ -163,7 +167,7 @@ public abstract class TFTPConnection {
      * @author bloo
      */
     protected void send(byte[] msg, DatagramSocket socket, SocketAddress returnAddress) {
-	send(socket, new DatagramPacket(msg, msg.length, returnAddress));
+	send(new DatagramPacket(msg, msg.length, returnAddress), socket);
     }
 
     /**
@@ -182,20 +186,19 @@ public abstract class TFTPConnection {
      */
     protected void send(byte[] msg, DatagramSocket socket, InetAddress address, int port) {
 	DatagramPacket sendPacket = new DatagramPacket(msg, msg.length, address, port);
-	send(socket, sendPacket);
+	send(sendPacket, socket);
     }
 
     /**
      * Base send method, used to send sendPacket over given socket
-     * 
-     * @param socket
-     *            - socket the packet will sent over
      * @param sendPacket
      *            - packet to be sent, includes destination
+     * @param socket
+     *            - socket the packet will sent over
      * 
      * @author bloo
      */
-    protected void send(DatagramSocket socket, DatagramPacket sendPacket) {
+    protected void send(DatagramPacket sendPacket, DatagramSocket socket) {
 	try {
 	    if (verbose) {
 		println("Sending: ");
@@ -266,6 +269,10 @@ public abstract class TFTPConnection {
 
 		    do {
 			receivePacket = receive(socket);
+			if(isLast(receivePacket)) {
+			    send(lastSentPkt, socket);
+			    continue;
+			}
 		    } while (!isFrom(receivePacket, socket, returnAddress) || !isNext(receivePacket));
 
 		    if (TFTPPacket.getType(receivePacket) == TFTPPacket.OP_DATA) {
@@ -359,10 +366,10 @@ public abstract class TFTPConnection {
 	if (lastSentPkt == null
 		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_ACK
 			&& TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_DATA
-			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt))
+			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt) - 1)
 		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_DATA
 			&& TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_ACK
-			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt) + 1)
+			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt))
 		|| TFTPPacket.getType(packet) == TFTPPacket.OP_ERROR)
 	    return true;
 	return false;
