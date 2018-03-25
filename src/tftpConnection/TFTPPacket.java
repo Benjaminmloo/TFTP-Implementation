@@ -132,19 +132,19 @@ public abstract class TFTPPacket {
 	    }
 	    case (byte)3: /*	DATA Packet */
 	    {
-		if(data[3] == zero)
+		if(data[2] == zero && data[3] == zero)
 		    break;
 		return;
 	    }
 	    case (byte)4: /*	ACK Packet */
 	    {
-		if(data[3] == zero)
+		if(data[2] == zero && data[3] == zero)
 		    break;
 		return;
 	    }
 	    case (byte)5: /*	ERROR Packet */
 	    {
-		if(data[3] == zero)
+		if(data[2] == zero && data[3] == zero)
 		    break;
 		return;
 	    }
