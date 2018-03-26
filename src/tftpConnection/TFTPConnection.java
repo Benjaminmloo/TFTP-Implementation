@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Set;
 
 import javax.swing.JScrollBar;
 import javax.swing.JTextArea;
@@ -29,10 +30,8 @@ public abstract class TFTPConnection {
     protected JTextArea outputWindow = new JTextArea();
     protected JScrollBar scrollBar = new JScrollBar();
 
-    protected static final String OCTET = "octet";
-    protected static final String NETASCII = "netascii";
-    protected static final byte[] MODE_OCTET = OCTET.getBytes();
-    protected static final byte[] MODE_NETASCII = NETASCII.getBytes();
+    protected static final byte[] MODE_OCTET = "octet".getBytes();
+    protected static final byte[] MODE_NETASCII = "netascii".getBytes();
 
     protected static final int SERVER_PORT = 69;
     protected static final int ESIM_PORT = 23;
@@ -129,7 +128,7 @@ public abstract class TFTPConnection {
 
 		    do {
 			ackPacket = receive(socket);
-			if(isLast(ackPacket)) {
+			if (isLast(ackPacket)) {
 			    send(lastSentPkt, socket);
 			    continue;
 			}
@@ -191,6 +190,7 @@ public abstract class TFTPConnection {
 
     /**
      * Base send method, used to send sendPacket over given socket
+     * 
      * @param sendPacket
      *            - packet to be sent, includes destination
      * @param socket
@@ -269,7 +269,7 @@ public abstract class TFTPConnection {
 
 		    do {
 			receivePacket = receive(socket);
-			if(isLast(receivePacket)) {
+			if (isLast(receivePacket)) {
 			    send(lastSentPkt, socket);
 			    continue;
 			}
@@ -362,40 +362,6 @@ public abstract class TFTPConnection {
 	}
     }
 
-    protected boolean isLast(DatagramPacket packet) {
-	if (lastSentPkt == null
-		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_ACK
-			&& TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_DATA
-			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt) - 1)
-		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_DATA
-			&& TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_ACK
-			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt))
-		|| TFTPPacket.getType(packet) == TFTPPacket.OP_ERROR)
-	    return true;
-	return false;
-    }
-    
-    protected boolean isNext(DatagramPacket packet) {
-	if (lastSentPkt == null
-		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_ACK
-			&& TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_DATA
-			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt))
-		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_DATA
-			&& TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_ACK
-			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt) + 1)
-		|| TFTPPacket.getType(packet) == TFTPPacket.OP_ERROR)
-	    return true;
-	return false;
-    }
-
-    protected boolean isFrom(DatagramPacket packet, DatagramSocket socket, SocketAddress expectedSender) {
-	if (packet.getSocketAddress().equals(expectedSender))
-	    return true;
-	send(TFTPPacket.createError(5, "Packet received from an unrecognised TID".getBytes()), socket, packet.getSocketAddress());
-
-	return false;
-    }
-
     /**
      * Base receive method
      * 
@@ -427,25 +393,150 @@ public abstract class TFTPConnection {
     protected DatagramPacket receive(DatagramSocket socket, int length) throws SocketTimeoutException {
 	DatagramPacket receivedPacket;
 
-	receivedPacket = new DatagramPacket(new byte[length], length);
+	while (true) {
+	    receivedPacket = new DatagramPacket(new byte[length], length);
 
-	try {
-	    socket.receive(receivedPacket);
-	    if (verbose) {
-		println("received: ");
-		println(TFTPPacket.packetToString(receivedPacket));
+	    try {
+		socket.receive(receivedPacket);
+		if (!isValid(receivedPacket, socket))
+		    continue;
+
+		if (verbose) {
+		    println("received: ");
+		    println(TFTPPacket.packetToString(receivedPacket));
+		}
+
+		return receivedPacket;
+
+	    } catch (IOException e) {
+		if (e instanceof SocketTimeoutException)
+		    throw (SocketTimeoutException) e;
+		e.printStackTrace();
+		System.exit(1);
 	    }
-
-	    return receivedPacket;
-
-	} catch (IOException e) {
-	    if (e instanceof SocketTimeoutException)
-		throw (SocketTimeoutException) e;
-	    e.printStackTrace();
-	    System.exit(1);
+	    return new DatagramPacket(new byte[0], 0);
 	}
-	return new DatagramPacket(new byte[0], 0);
 
+    }
+
+    protected boolean isLast(DatagramPacket packet) {
+	if (lastSentPkt == null
+		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_ACK
+			&& TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_DATA
+			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt) - 1)
+		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_DATA
+			&& TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_ACK
+			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt))
+		|| TFTPPacket.getType(packet) == TFTPPacket.OP_ERROR)
+	    return true;
+	return false;
+    }
+
+    protected boolean isNext(DatagramPacket packet) {
+	if (lastSentPkt == null
+		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_ACK
+			&& TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_DATA
+			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt))
+		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_DATA
+			&& TFTPPacket.getType(lastSentPkt) == TFTPPacket.OP_ACK
+			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt) + 1)
+		|| TFTPPacket.getType(packet) == TFTPPacket.OP_ERROR)
+	    return true;
+	return false;
+    }
+
+    /**
+     * Authenticates packet
+     * 
+     * @param packet
+     * @throws IOException
+     * @author Benjamin, BLoo
+     */
+    public boolean isValid(DatagramPacket packet, DatagramSocket socket) {
+	byte[] data = packet.getData();
+	byte[] hold;
+
+	Set<Byte> validPackets = TFTPPacket.PacketTypes.keySet();
+	if (data[0] == ZERO_BYTE && validPackets.contains(data[1])) // Checks packet type formatting
+	{
+	    switch (data[1]) {
+	    case (byte) 1:
+	    case (byte) 2: /* RRQ & WRQ Packet */
+	    {
+		hold = TFTPPacket.readToStop(2, packet.getData(), packet.getLength());
+		if (hold != null) {
+		    int i = hold.length + 3;
+		    i += TFTPPacket.readToStop(hold.length + 3, packet.getData(), packet.getLength()).length;
+		    System.out.println(i + ", " + (packet.getLength() - 1));
+		    return i == packet.getLength() - 1;
+		}
+		/*
+		 * Find offset of mode field by reading the first field and adding that fields
+		 * length, accounting for the terminating zero and initial offset, to the offset
+		 */
+	    }
+	    case (byte) 3: /* DATA Packet */
+	    {
+		hold = TFTPPacket.readToStop(4, data, packet.getLength());
+		System.out.println((hold != null) + ", " + (hold.length) + "," + (packet.getLength() - 4));
+		return (hold != null && hold.length == packet.getLength() - 4);
+	    }
+	    case (byte) 4: /* ACK Packet */
+	    {
+		System.out.println(packet.getLength() + ", " + 4);
+		return packet.getLength() == 4;
+	    }
+	    case (byte) 5: /* ERROR Packet */
+	    {
+		hold = TFTPPacket.readToStop(4, packet.getData(), packet.getLength());
+		System.out.println((hold != null) + ", " + (hold.length) + ", " + (packet.getLength() - 5));
+		return (hold != null && hold.length == packet.getLength() - 5);
+	    }
+	    }
+	}
+
+	if (socket != null)
+	    send(TFTPPacket.createError(4, "Illegal TFTP operation.".getBytes()), socket, packet.getSocketAddress());
+	return false;
+    }
+
+    private void isValidTest() {
+	byte[] file = "test.txt".getBytes();
+	byte[] contents = new byte[512];
+	byte[] rrq, wrq, data, ack, error;
+
+	for (int i = 0; i < contents.length; i++)
+	    contents[i] = (byte) (Math.random() * 24 + 66);
+
+	rrq = TFTPPacket.createRQ((byte) 1, file, MODE_NETASCII);
+	wrq = TFTPPacket.createRQ((byte) 2, file, MODE_NETASCII);
+
+	data = TFTPPacket.createData(5, contents);
+
+	DatagramPacket dp = new DatagramPacket(data, data.length);
+	data = dp.getData();
+
+	ack = TFTPPacket.createAck(5);
+	error = TFTPPacket.createError((byte) 1, MODE_OCTET);
+
+	System.out.println("rrq test: " + isValid(new DatagramPacket(rrq, rrq.length), null));
+
+	System.out.println("wrq test: " + isValid(new DatagramPacket(wrq, wrq.length), null));
+
+	System.out.println("data test: " + isValid(new DatagramPacket(data, data.length), null));
+
+	System.out.println("ack test: " + isValid(new DatagramPacket(ack, ack.length), null));
+
+	System.out.println("error test: " + isValid(new DatagramPacket(error, error.length), null));
+    }
+
+    protected boolean isFrom(DatagramPacket packet, DatagramSocket socket, SocketAddress expectedSender) {
+	if (packet.getSocketAddress().equals(expectedSender))
+	    return true;
+	send(TFTPPacket.createError(5, "Packet received from an unrecognised TID".getBytes()), socket,
+		packet.getSocketAddress());
+
+	return false;
     }
 
     /**

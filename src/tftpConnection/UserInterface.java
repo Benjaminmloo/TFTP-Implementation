@@ -33,9 +33,8 @@ public class UserInterface {
     private JPanel outputPanel, inputPanel, subOutputPanel;
 
     DefaultCaret caret;
-    
+
     private InetAddress serverAddress;
-    
 
     public UserInterface() {
 	try {
@@ -51,7 +50,7 @@ public class UserInterface {
 
 	frame = new JFrame("File Transfer System");
 	frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	
+
 	MenuListener menuListener = new MenuListener();
 	JMenuBar menuBar = new JMenuBar();
 	JMenu fileMenu = new JMenu("File");
@@ -207,11 +206,11 @@ public class UserInterface {
 	    } else if (connection instanceof ErrorSimulator) {
 		((ErrorSimulator) connection).startPassthrough();
 	    } else if (connection instanceof Server) {
-		/* <<DEPRECATED>> ((Server) connection).userInterface();*/
+		/* <<DEPRECATED>> ((Server) connection).userInterface(); */
 	    }
 	}
-
     }
+    
     public class MenuListener implements ActionListener
     {
 

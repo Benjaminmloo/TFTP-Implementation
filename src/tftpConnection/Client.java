@@ -33,35 +33,6 @@ public class Client extends TFTPConnection {
     }
 
     /**
-     * creates request packet adding timeout to this method when creating request
-     * packet. timeout needs to be agreed by both Client and Server.
-     * 
-     * @param opCode
-     *            - either 1 or 2 for read or write request
-     * @param file
-     *            - the name of the file the server will be operating on
-     * @param mode
-     *            - the mode in which the data will be handeled
-     * @return the packet in the form of a byte array
-     * @author Eric
-     */
-    public byte[] createRQ(byte opCode, byte[] file, byte[] mode) {
-	ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-	try {
-	    outputStream.write(ZERO_BYTE);
-	    outputStream.write(opCode);
-	    outputStream.write(file);
-	    outputStream.write(ZERO_BYTE);
-	    outputStream.write(mode);
-	    outputStream.write(ZERO_BYTE);
-
-	} catch (IOException e1) {
-	    e1.printStackTrace();
-	}
-	return outputStream.toByteArray();
-    }
-
-    /**
      * Basic UI, gets input from user ** WILL be upgraded in future iterations.
      * 
      * @author Benjamin, Bloo, Eric
@@ -244,8 +215,8 @@ public class Client extends TFTPConnection {
 				    }
 
 				    // set parameters for error simulation
-				    errorSim.setParameters(errorSimMode, errorSimBlock, errorSimDelay, errorSimType, errorSim4OpCode
-					    , errorSim4File, errorSim4Mode);
+				    errorSim.setParameters(errorSimMode, errorSimBlock, errorSimDelay, errorSimType,
+					    errorSim4OpCode, errorSim4File, errorSim4Mode);
 
 				    input = null;
 				    notifyAll();
@@ -351,8 +322,8 @@ public class Client extends TFTPConnection {
 	}
 
 	try {
-	    send(createRQ(requestType, serverFile.getBytes(), MODE_OCTET), connectionSocket, this.serverAddress,
-		    port);
+	    send(TFTPPacket.createRQ(requestType, serverFile.getBytes(), MODE_OCTET), connectionSocket,
+		    this.serverAddress, port);
 
 	    // New input for timeout and retransmission
 	    // loop begins at 0 and increments as socket times out. Goes up every 2 seconds.
@@ -380,9 +351,9 @@ public class Client extends TFTPConnection {
 	    e.printStackTrace();
 	}
     }
-    
+
     public void invalidFormatSimulation() {
-	
+
 	print("Select which parts of the packet you would like to wrongfully format (y/n)");
 	print("OpCode?(y/n): ");
 	getInvalidFormatInput(errorSim4OpCode);
@@ -390,15 +361,15 @@ public class Client extends TFTPConnection {
 	getInvalidFormatInput(errorSim4File);
 	print("Mode?(y/n): ");
 	getInvalidFormatInput(errorSim4Mode);
-	
-	
+
     }
+
     public void getInvalidFormatInput(boolean packetItem) {
 
 	while (true) {
 	    input = null;
 	    try {
-		
+
 		while (input == null) {
 		    try {
 			wait();
