@@ -7,6 +7,8 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import javax.swing.*;
 import javax.swing.text.DefaultCaret;
@@ -32,13 +34,20 @@ public class UserInterface {
 
     DefaultCaret caret;
     
-    private Inet4Address serverAddress;
+    private InetAddress serverAddress;
     
 
     public UserInterface() {
+	try {
+	    serverAddress = InetAddress.getLocalHost();
+	} catch (UnknownHostException e) {
+	    e.printStackTrace();
+	    JOptionPane.showMessageDialog(frame, "Default Host initialization error\n");
+	}
 	errorSim = new ErrorSimulator();
-	client = new Client(errorSim);
+	client = new Client(serverAddress, errorSim);
 	server = new Server(69);
+	
 
 	frame = new JFrame("File Transfer System");
 	frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -47,9 +56,15 @@ public class UserInterface {
 	JMenuBar menuBar = new JMenuBar();
 	JMenu fileMenu = new JMenu("File");
 	menuBar.add(fileMenu);
-	JMenuItem editServer = new JMenuItem("Edit Server IP");
+	JMenuItem clientIP = new JMenuItem("Client IP");
+	clientIP.addActionListener(menuListener);
+	JMenuItem editServer = new JMenuItem("Server IP");
 	editServer.addActionListener(menuListener);
+	JMenuItem resetServer = new JMenuItem("Reset IP");
+	resetServer.addActionListener(menuListener);
+	fileMenu.add(clientIP);
 	fileMenu.add(editServer);
+	fileMenu.add(resetServer);
 
 	tabPane = new JTabbedPane();
 	tabPane2 = new JTabbedPane();
@@ -206,8 +221,44 @@ public class UserInterface {
 	    
 	    switch (item.getText())
 	    {
-	    	case "Edit Server IP":
-	    	    String in = (String)JOptionPane.showInputDialog(frame, "Enter new address Current address " + serverAddress);
+	    	case "Client IP":
+	    	{
+	    	try {
+		    InetAddress clientAddress = InetAddress.getLocalHost();
+		    JOptionPane.showMessageDialog(frame, clientAddress.toString());
+		} catch (UnknownHostException ue) {
+		    ue.printStackTrace();
+		}
+	    	break;
+	    	}
+	    	case "Server IP":
+	    	{
+	    	    String in = (String)JOptionPane.showInputDialog(frame, "Current server " + serverAddress + "\nEnter new address\n");
+	    	    if(in != null && in.length() > 0)
+	    	    {
+	    		try {
+	    		    serverAddress = InetAddress.getByName(in);
+	    		} catch (UnknownHostException e1) {
+			// TODO Auto-generated catch block
+	    		    e1.printStackTrace();
+	    		    JOptionPane.showMessageDialog(frame, "Invalid server address");
+	    		    break;
+	    		}
+	    		JOptionPane.showMessageDialog(frame, "Server IP Changed!");
+	    	    }
+	    	break;
+	    	}    
+	    	case "Reset IP":
+	    	{
+	    	try {
+		    serverAddress = InetAddress.getLocalHost();
+		} catch (UnknownHostException ue) {
+		    ue.printStackTrace();
+		    JOptionPane.showMessageDialog(frame, "Default Host initialization error\n");
+		    break;
+		}
+	    	break;
+	    	}
 	    	    
 	    }
 	}

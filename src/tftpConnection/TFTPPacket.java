@@ -127,7 +127,10 @@ public abstract class TFTPPacket {
 	    {
 		if(data[size + 1] == zero)
 			if(data[-1] == zero)
+			{
+			    System.out.println("Packet Authenticated\n");
 			    return;
+			}
 		break;
 	    }
 	    case (byte)3: /*	DATA Packet */
@@ -148,9 +151,7 @@ public abstract class TFTPPacket {
 		    break;
 		return;
 	    }
-	    }
-	    
-	    
+	    } 
 	}
 	throw new IOException();
     }

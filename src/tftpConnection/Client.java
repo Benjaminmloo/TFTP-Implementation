@@ -22,10 +22,13 @@ public class Client extends TFTPConnection {
     private int errorSimDelay = 0;
     private int errorSimType = 0;
     private boolean errorSim4OpCode, errorSim4File, errorSim4Mode;
+    
+    private InetAddress serverAddress;
 
-    public Client(ErrorSimulator errorSim) {
+    public Client(InetAddress server, ErrorSimulator errorSim) {
 	this.verbose = true;
 	this.errorSim = errorSim;
+	serverAddress = server;
 
     }
 
@@ -348,7 +351,7 @@ public class Client extends TFTPConnection {
 	}
 
 	try {
-	    send(createRQ(requestType, serverFile.getBytes(), MODE_OCTET), connectionSocket, InetAddress.getLocalHost(),
+	    send(createRQ(requestType, serverFile.getBytes(), MODE_OCTET), connectionSocket, this.serverAddress,
 		    port);
 
 	    // New input for timeout and retransmission
@@ -358,8 +361,8 @@ public class Client extends TFTPConnection {
 
 	    if (requestType == TFTPPacket.OP_WRQ) {
 		ackPacket = receive(connectionSocket); // Receive a packet using the connection Socket
+		TFTPPacket.checkPacket(ackPacket);
 		if (TFTPPacket.getType(ackPacket) == TFTPPacket.OP_ACK) { // If server has given acknowledge to write
-		    sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
 
 		} else if (TFTPPacket.getType(ackPacket) == TFTPPacket.OP_ERROR) {
 		    System.err.println("\n" + TFTPPacket.packetToString(ackPacket)); // if the error packet hasn't
