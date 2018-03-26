@@ -1,5 +1,6 @@
 package tftpConnection;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.DatagramPacket;
@@ -10,12 +11,16 @@ import java.util.Map;
 import java.util.Set;
 
 public abstract class TFTPPacket {
+    protected static final byte[] MODE_OCTET = "octet".getBytes();
+    protected static final byte[] MODE_NETASCII = "netascii".getBytes();
 
     public static final byte OP_RRQ = 1;
     public static final byte OP_WRQ = 2;
     public static final byte OP_DATA = 3;
     public static final byte OP_ACK = 4;
     public static final byte OP_ERROR = 5;
+
+    protected static final byte ZERO_BYTE = 0;
 
     protected static Map<Byte, String> PacketTypes;
     static {
@@ -26,6 +31,35 @@ public abstract class TFTPPacket {
 	PacketTypes.put((byte) OP_DATA, "DATA");
 	PacketTypes.put((byte) OP_ACK, "ACK");
 	PacketTypes.put((byte) OP_ERROR, "ERROR");
+    }
+
+    /**
+     * creates request packet adding timeout to this method when creating request
+     * packet. timeout needs to be agreed by both Client and Server.
+     * 
+     * @param opCode
+     *            - either 1 or 2 for read or write request
+     * @param file
+     *            - the name of the file the server will be operating on
+     * @param mode
+     *            - the mode in which the data will be handeled
+     * @return the packet in the form of a byte array
+     * @author Eric
+     */
+    public static byte[] createRQ(byte opCode, byte[] file, byte[] mode) {
+	ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+	try {
+	    outputStream.write(ZERO_BYTE);
+	    outputStream.write(opCode);
+	    outputStream.write(file);
+	    outputStream.write(ZERO_BYTE);
+	    outputStream.write(mode);
+	    outputStream.write(ZERO_BYTE);
+
+	} catch (IOException e1) {
+	    e1.printStackTrace();
+	}
+	return outputStream.toByteArray();
     }
 
     /**
@@ -70,10 +104,11 @@ public abstract class TFTPPacket {
      * @author BLoo
      */
     public static byte[] createError(int error, byte[] msg) {
-	byte[] packet = new byte[4 + msg.length];
+	byte[] packet = new byte[5 + msg.length];
 	ByteBuffer dBuff = ByteBuffer.wrap(packet);
 	dBuff.put(new byte[] { 0, OP_ERROR, (byte) (error / 256), (byte) (error % 256) });
 	dBuff.put(msg);
+	dBuff.put((byte) 0);
 	return packet;
     }
 
@@ -91,7 +126,7 @@ public abstract class TFTPPacket {
      * 
      * @author bloo
      */
-    private static byte[] readToStop(int offset, byte[] packet, int dataLength) {
+    static byte[] readToStop(int offset, byte[] packet, int dataLength) {
 	byte[] data = new byte[512];
 	int index;
 
@@ -104,56 +139,7 @@ public abstract class TFTPPacket {
 	}
 	return Arrays.copyOfRange(data, 0, index - offset);
     }
-    
-    /**
-     * Authenticates packet
-     * 
-     * @author Benjamin
-     * @param packet
-     * @throws IOException
-     */
-    public static void checkPacket(DatagramPacket packet) throws IOException
-    {
-	byte[] data = packet.getData();
-	int size = packet.getLength();
-	byte zero = 0;
-	Set<Byte> validPackets = PacketTypes.keySet();
-	if( data[0] == zero && validPackets.contains(data[1]) ) //Checks packet type formatting
-	{
-	    switch(data[1])
-	    {
-	    case (byte)1:
-	    case (byte)2: /*	RRQ & WRQ Packet */	
-	    {
-		if(data[size + 1] == zero)
-			if(data[-1] == zero)
-			    return;
-		break;
-	    }
-	    case (byte)3: /*	DATA Packet */
-	    {
-		if(data[2] == zero && data[3] == zero)
-		    break;
-		return;
-	    }
-	    case (byte)4: /*	ACK Packet */
-	    {
-		if(data[2] == zero && data[3] == zero)
-		    break;
-		return;
-	    }
-	    case (byte)5: /*	ERROR Packet */
-	    {
-		if(data[2] == zero && data[3] == zero)
-		    break;
-		return;
-	    }
-	    }
-	    
-	    
-	}
-	throw new IOException();
-    }
+
     /**
      * Converts byte[] to string using utf-8 encoding when available uses default
      * when utf-8 isn't available
@@ -308,7 +294,8 @@ public abstract class TFTPPacket {
     }
 
     /**
-     * Gets the number of bytes in the data section of a data packet
+     * Gets the number of bytes in the data section of a data packet ONLY ACCEPTS
+     * DATA PACKETS
      * 
      * @param packet
      *            - where the data will be extracted

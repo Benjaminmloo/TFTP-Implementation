@@ -98,6 +98,8 @@ public class ErrorSimulator extends TFTPConnection {
 			simulateDelayPacket(receivePacket, receiveAddress, false);
 		    } else if (errorSimMode == 3) {
 			simulateDuplicatePacket(receivePacket, receiveAddress, false);
+		    } else if (errorSimMode == 4) {
+			simulateInvalidFormat(receivePacket, receiveAddress, false);
 		    } else if (errorSimMode == 5) {
 			simulateUnknownTID(receivePacket, clientAddress, false);
 		    }
@@ -133,13 +135,15 @@ public class ErrorSimulator extends TFTPConnection {
 		    if (errorSimMode > 0 && TFTPPacket.getType(initialPacket) == errorSimType) {
 
 			if (errorSimMode == 1) {
-			    simulateLosePacket(initialPacket, clientAddress, true);
+			    simulateLosePacket(initialPacket, serverAddress, true);
 			} else if (errorSimMode == 2) {
-			    simulateDelayPacket(initialPacket, clientAddress, true);
+			    simulateDelayPacket(initialPacket, serverAddress, true);
 			} else if (errorSimMode == 3) {
-			    simulateDuplicatePacket(initialPacket, clientAddress, true);
+			    simulateDuplicatePacket(initialPacket, serverAddress, true);
+			} else if (errorSimMode == 4) {
+			    simulateInvalidFormat(initialPacket, serverAddress, true);
 			} else if (errorSimMode == 5) {
-			    simulateUnknownTID(initialPacket, clientAddress, true);
+			    simulateUnknownTID(initialPacket, serverAddress, true);
 			}
 		    } else {
 			send(initialPacket.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
@@ -155,18 +159,20 @@ public class ErrorSimulator extends TFTPConnection {
 		if (errorSimMode > 0 && TFTPPacket.getType(responsePacket) == errorSimType
 			&& TFTPPacket.getBlockNum(responsePacket) == errorSimBlock) {
 		    if (errorSimMode == 1) {
-			simulateLosePacket(initialPacket, clientAddress, false);
+			simulateLosePacket(responsePacket, clientAddress, false);
 		    } else if (errorSimMode == 2) {
-			simulateDelayPacket(initialPacket, clientAddress, false);
+			simulateDelayPacket(responsePacket, clientAddress, false);
 		    } else if (errorSimMode == 3) {
-			simulateDuplicatePacket(initialPacket, clientAddress, false);
+			simulateDuplicatePacket(responsePacket, clientAddress, false);
+		    } else if (errorSimMode == 4) {
+			simulateInvalidFormat(responsePacket, clientAddress, false);
 		    } else if (errorSimMode == 5) {
-			simulateUnknownTID(initialPacket, clientAddress, false);
+			simulateUnknownTID(responsePacket, clientAddress, false);
 		    }
 		} else {
 		    send(responsePacket.getData(), mediatorSocket, clientAddress);
 		}
-		
+
 		if (TFTPPacket.getType(responsePacket) == TFTPPacket.OP_ERROR)
 		    continue;
 		println("starting mediation");
@@ -288,12 +294,10 @@ public class ErrorSimulator extends TFTPConnection {
 	    e1.printStackTrace();
 	}
 
-
 	if (!firstPass)
 	    send(outputStream.toByteArray(), mediatorSocket, address);
 	else
 	    send(outputStream.toByteArray(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
-
 
 	clearErrorSim();
     }
@@ -349,8 +353,7 @@ public class ErrorSimulator extends TFTPConnection {
      * 
      * @author Eric
      */
-    
-    
+
     public void setParameters(int mode, int block, int delay, int type, boolean opCode, boolean file,
 	    boolean modeSym4) {
 	errorSimMode = mode;
