@@ -17,12 +17,6 @@ public class Client extends TFTPConnection {
     private byte operation; // Operation type to be requested
     private String input;
     private ErrorSimulator errorSim;
-    private int errorSimMode = 0;
-    private int errorSimBlock = 0;
-    private int errorSimDelay = 0;
-    private int errorSimType = 0;
-    private boolean errorSim4OpCode, errorSim4File, errorSim4Mode;
-    
     private InetAddress serverAddress;
 
     public Client(InetAddress server, ErrorSimulator errorSim) {
@@ -30,6 +24,12 @@ public class Client extends TFTPConnection {
 	this.errorSim = errorSim;
 	serverAddress = server;
 
+    }
+
+    public Client(ErrorSimulator errorSim) {
+	this.verbose = true;
+	serverAddress = null;
+	this.errorSim = errorSim;
     }
 
     /**
@@ -42,6 +42,15 @@ public class Client extends TFTPConnection {
 						     * localFile: Local file to be written or read serverFile: File to
 						     * be read or written on the server
 						     */
+
+	int errorSimMode = -1;
+	int errorSimBlock = -1;
+	int errorSimDelay = -1;
+	int errorSimType = -1;
+	int newOpCode = -1;
+	int newNum = -1;
+	String newField = null;
+
 	int sendPort = SERVER_PORT;
 
 	/* Continue execution until exit is issued */
@@ -184,39 +193,43 @@ public class Client extends TFTPConnection {
 
 				    if (input.equals("1")) { // Lose Packet Simulation
 					errorSimMode = 1;
-					getPacketErrorSimBlock();
-					getPacketErrorSimType();
+					errorSimBlock = getPosInt("Enter block num ( >= 0): ");
+					errorSimType = getPacketType();
 
 				    } else if (input.equals("2")) { // Delay Packet Simulation
 					errorSimMode = 2;
-					getPacketErrorSimBlock();
-					getPacketErrorSimType();
-					getPacketSimDelay();
+					errorSimBlock = getPosInt("Enter block num ( >= 0): ");
+					errorSimType = getPacketType();
+					errorSimDelay = getPosInt("Delay (ms):  ");
 
 				    } else if (input.equals("3")) { // Duplicate Packet Simulation
 					errorSimMode = 3;
-					getPacketErrorSimBlock();
-					getPacketErrorSimType();
-					getPacketSimDelay();
+					errorSimBlock = getPosInt("Enter block num ( >= 0): ");
+					errorSimType = getPacketType();
+					errorSimDelay = getPosInt("Delay (ms):  ");
 
 				    } else if (input.equals("4")) { // Simulate invalid packet format
 					errorSimMode = 4;
-					getPacketErrorSimBlock();
-					getPacketErrorSimType();
-					invalidFormatSimulation();
+					errorSimBlock = getPosInt("Enter block num ( >= 0): ");
+					errorSimType = getPacketType();
+
+					print("Enter the new packet information");
+					newOpCode = getPosInt("Enter Opcode ( >= 0): ");
+					newNum = getPosInt("Enter second number ( >= 0): ");
+					newField = getString(
+						"Enter data fields(be sure to include field terminating '0' when needed): ");
 
 				    } else if (input.equals("5")) { // Simulate unknown TID
 					errorSimMode = 5;
-					getPacketErrorSimBlock();
-					getPacketErrorSimType();
+					errorSimBlock = getPosInt("Enter block num ( >= 0): ");
+					errorSimType = getPacketType();
 
 				    } else {
 					throw new InputMismatchException();
 				    }
 
-				    // set parameters for error simulation
 				    errorSim.setParameters(errorSimMode, errorSimBlock, errorSimDelay, errorSimType,
-					    errorSim4OpCode, errorSim4File, errorSim4Mode);
+					    newOpCode, newNum, newField);
 
 				    input = null;
 				    notifyAll();
@@ -332,7 +345,7 @@ public class Client extends TFTPConnection {
 
 	    if (requestType == TFTPPacket.OP_WRQ) {
 		ackPacket = receive(connectionSocket); // Receive a packet using the connection Socket
-		TFTPPacket.checkPacket(ackPacket);
+		sendFile(data, ackPacket.getSocketAddress(), connectionSocket);
 		if (TFTPPacket.getType(ackPacket) == TFTPPacket.OP_ACK) { // If server has given acknowledge to write
 
 		} else if (TFTPPacket.getType(ackPacket) == TFTPPacket.OP_ERROR) {
@@ -347,29 +360,21 @@ public class Client extends TFTPConnection {
 	} catch (UnknownHostException e) {
 	    e.printStackTrace();
 	    System.exit(1);
+	} catch (IllegalArgumentException e) {
+	    e.printStackTrace();
+	    return;
 	} catch (IOException e) {
 	    e.printStackTrace();
 	}
     }
 
-    public void invalidFormatSimulation() {
-
-	print("Select which parts of the packet you would like to wrongfully format (y/n)");
-	print("OpCode?(y/n): ");
-	getInvalidFormatInput(errorSim4OpCode);
-	print("File?(y/n): ");
-	getInvalidFormatInput(errorSim4File);
-	print("Mode?(y/n): ");
-	getInvalidFormatInput(errorSim4Mode);
-
-    }
-
-    public void getInvalidFormatInput(boolean packetItem) {
+    private String getString(String msg) {
+	String inputString;
 
 	while (true) {
 	    input = null;
 	    try {
-
+		print(msg);
 		while (input == null) {
 		    try {
 			wait();
@@ -378,55 +383,10 @@ public class Client extends TFTPConnection {
 		    }
 		}
 
-		if (input.equals("y") || input.equals("Y")) {
-		    packetItem = true;
-		} else if (input.equals("n") || input.equals("N")) {
-		    packetItem = false;
-		} else {
-		    throw new InputMismatchException();
-		}
-		
+		inputString = input;
 		input = null;
 		notifyAll();
-		break;
-	    } catch (InputMismatchException e) {
-		println("Invalid input!");
-		input = null;
-		notifyAll();
-	    }
-	}
-	
-    }
-    
-
-    /**
-     * Get Packet block # to be modified during error Simulation
-     * 
-     * @author Eric
-     */
-    public void getPacketErrorSimBlock() {
-
-	while (true) {
-	    input = null;
-	    try {
-		print("Block #(1 - 65000): ");
-		while (input == null) {
-		    try {
-			wait();
-		    } catch (InterruptedException e) {
-			e.printStackTrace();
-		    }
-		}
-
-		try {
-		    errorSimBlock = Integer.parseInt(input);
-		} catch (NumberFormatException e) {
-		    throw new InputMismatchException();
-		}
-
-		input = null;
-		notifyAll();
-		break;
+		return inputString;
 	    } catch (InputMismatchException e) {
 		println("Invalid input!");
 		input = null;
@@ -435,17 +395,12 @@ public class Client extends TFTPConnection {
 	}
     }
 
-    /**
-     * Get Packet delay, used for delay, and duplicate error Simulations
-     * 
-     * @author Eric
-     */
-    public void getPacketSimDelay() {
-
+    private int getPosInt(String msg) {
+	int inputInt;
 	while (true) {
 	    input = null;
 	    try {
-		print("Delay (ms):  ");
+		print(msg);
 		while (input == null) {
 		    try {
 			wait();
@@ -453,17 +408,15 @@ public class Client extends TFTPConnection {
 			e.printStackTrace();
 		    }
 		}
+		inputInt = Integer.parseInt(input);
 
-		try {
-		    errorSimDelay = Integer.parseInt(input);
-		} catch (NumberFormatException e) {
-		    throw new InputMismatchException();
-		}
+		if (inputInt < 0)
+		    throw new NumberFormatException();
 
 		input = null;
 		notifyAll();
-		break;
-	    } catch (InputMismatchException e) {
+		return inputInt;
+	    } catch (NumberFormatException e) {
 		println("Invalid input!");
 		input = null;
 		notifyAll();
@@ -476,8 +429,8 @@ public class Client extends TFTPConnection {
      * 
      * @author Eric
      */
-    public void getPacketErrorSimType() {
-
+    public int getPacketType() {
+	int type;
 	while (true) {
 	    input = null;
 	    try {
@@ -491,20 +444,20 @@ public class Client extends TFTPConnection {
 		}
 
 		if (input.equals("1")) {
-		    errorSimType = 1;
+		    type = 1;
 		} else if (input.equals("2")) {
-		    errorSimType = 2;
+		    type = 2;
 		} else if (input.equals("3")) {
-		    errorSimType = 3;
+		    type = 3;
 		} else if (input.equals("4")) {
-		    errorSimType = 4;
+		    type = 4;
 		} else {
 		    throw new InputMismatchException();
 		}
 
 		input = null;
 		notifyAll();
-		break;
+		return type;
 	    } catch (InputMismatchException e) {
 		println("Invalid input!");
 		input = null;

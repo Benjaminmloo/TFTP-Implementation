@@ -165,7 +165,7 @@ public class Server extends TFTPConnection {
 	    while (cont) {
 		try {
 		    receivedPacket = receive(requestSocket); // wait for new request packet
-		    //TFTPPacket.checkPacket(receivedPacket);
+		    // TFTPPacket.checkPacket(receivedPacket);
 		    if (receivedPacket != null)
 		    {
 			println("Packet received");
