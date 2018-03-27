@@ -167,8 +167,10 @@ public class Server extends TFTPConnection {
 		    receivedPacket = receive(requestSocket); // wait for new request packet
 		    //TFTPPacket.checkPacket(receivedPacket);
 		    if (receivedPacket != null)
+		    {
+			println("Packet received");
 			new Thread(new ThreadedConnection(receivedPacket, verbose, outputWindow)).start(); // start new
-													   // client
+		    }// client
 													   // connection
 													   // for the
 		    // recently acquired request
