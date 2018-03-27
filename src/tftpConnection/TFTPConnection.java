@@ -10,11 +10,13 @@ import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Set;
+import java.net.InetSocketAddress;
 
 import javax.swing.JScrollBar;
 import javax.swing.JTextArea;
@@ -75,7 +77,8 @@ public abstract class TFTPConnection {
     protected DatagramSocket waitForSocket(int port) {
 	while (true) {
 	    try {
-		return new DatagramSocket(port);
+		InetSocketAddress sockAd = new InetSocketAddress(InetAddress.getLocalHost(), port);
+		return new DatagramSocket(sockAd);
 	    } catch (SocketException e) {
 		e.printStackTrace();
 		try {
@@ -83,6 +86,9 @@ public abstract class TFTPConnection {
 		} catch (InterruptedException e1) {
 		    e1.printStackTrace();
 		}
+	    } catch (UnknownHostException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
 	    }
 	}
     }

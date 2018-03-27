@@ -539,5 +539,4 @@ public class Client extends TFTPConnection {
 	input = s;
 	notifyAll();
     }
-
 }

@@ -12,6 +12,9 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import javax.swing.JTextArea;
 
+/*	 
+ * @author Benjamin
+ * */
 public class ThreadedConnection extends TFTPConnection implements Runnable {
 
     private DatagramPacket requestPacket;

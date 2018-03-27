@@ -216,7 +216,6 @@ public class UserInterface {
     
     public class MenuListener implements ActionListener
     {
-
 	@Override
 	public void actionPerformed(ActionEvent e) {
 	    JMenuItem item = (JMenuItem) e.getSource();
@@ -262,10 +261,7 @@ public class UserInterface {
 	    	JOptionPane.showMessageDialog(frame, "Server IP Reset");
 	    	break;
 	    	}
-	    	    
 	    }
-	}
-	
-	
+	}	
     }
 }
