@@ -168,7 +168,7 @@ public class Server extends TFTPConnection {
 		    // TFTPPacket.checkPacket(receivedPacket);
 		    if (receivedPacket != null)
 		    {
-			println("Packet received");
+			println("Packet received from " + receivedPacket.getAddress());
 			new Thread(new ThreadedConnection(receivedPacket, verbose, outputWindow)).start(); // start new
 		    }// client
 													   // connection
@@ -179,12 +179,7 @@ public class Server extends TFTPConnection {
 		    System.exit(1);
 		} catch (SocketTimeoutException e) {
 		    print("time out");
-		} catch (IOException e) {
-		    // TODO Auto-generated catch block
-		    e.printStackTrace();
-		    println("Invalid Packet Type received");
-		    System.exit(1);
-		}
+		} 
 	    }
 	}
 
