@@ -162,7 +162,6 @@ public class Server extends TFTPConnection {
 
 	@Override
 	public void run() {
-	    println("starting");
 	    while (cont) {
 		try {
 		    receivedPacket = receive(requestSocket); // wait for new request packet

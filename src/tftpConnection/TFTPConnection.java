@@ -152,7 +152,7 @@ public abstract class TFTPConnection {
 		} catch (SocketTimeoutException e) { // default timeout is 2 seconds
 		    if (verbose)
 			println("Time Out");
-		    if (j >= TRANSMIT_LIMIT) {
+		    if (j >= TRANSMIT_LIMIT - 1) {
 			print("Connection timed out \n Stopping transfer");
 			return;
 		    } else {
@@ -298,7 +298,7 @@ public abstract class TFTPConnection {
 		  return;  
 		} catch (SocketTimeoutException e) {
 		    println("Time Out");
-		    if (i >= TRANSMIT_LIMIT) {
+		    if (i >= TRANSMIT_LIMIT - 1) {
 			print("Connection timed out \n Stopping transfer");
 			return;
 		    } else {
@@ -430,6 +430,16 @@ public abstract class TFTPConnection {
 
     }
 
+    protected boolean isFrom(DatagramPacket packet, DatagramSocket socket, SocketAddress expectedSender) {
+        if (packet.getSocketAddress().equals(expectedSender))
+            return true;
+        println("ins't from partner");
+        send(TFTPPacket.createError(5, "Packet received from an unrecognised TID".getBytes()), socket,
+        	packet.getSocketAddress());
+    
+        return false;
+    }
+
     protected boolean isLast(DatagramPacket packet) {
 	if (lastSentPkt == null
 		|| (TFTPPacket.getType(packet) == TFTPPacket.OP_ACK
@@ -479,7 +489,9 @@ public abstract class TFTPConnection {
 		if (hold != null) {
 		    int i = hold.length + 3;
 		    i += TFTPPacket.readToStop(hold.length + 3, packet.getData(), packet.getLength()).length;
+		    System.out.println(i + ", " + (packet.getLength() - 1));
 		    valid = i == packet.getLength() - 1;
+		    break;
 		}
 		/*
 		 * Find offset of mode field by reading the first field and adding that fields
@@ -490,15 +502,18 @@ public abstract class TFTPConnection {
 	    {
 		hold = TFTPPacket.readToStop(4, data, packet.getLength());
 		valid =  (hold != null && hold.length == packet.getLength() - 4);
+		break;
 	    }
 	    case (byte) 4: /* ACK Packet */
 	    {
 		valid =  packet.getLength() == 4;
+		break;
 	    }
 	    case (byte) 5: /* ERROR Packet */
 	    {
 		hold = TFTPPacket.readToStop(4, packet.getData(), packet.getLength());
 		valid = (hold != null && hold.length == packet.getLength() - 5);
+		break;
 	    }
 	    }
 	}
@@ -541,15 +556,6 @@ public abstract class TFTPConnection {
 	System.out.println("ack test: " + validate(new DatagramPacket(ack, ack.length), null));
 
 	System.out.println("error test: " + validate(new DatagramPacket(error, error.length), null));
-    }
-
-    protected boolean isFrom(DatagramPacket packet, DatagramSocket socket, SocketAddress expectedSender) {
-	if (packet.getSocketAddress().equals(expectedSender))
-	    return true;
-	send(TFTPPacket.createError(5, "Packet received from an unrecognised TID".getBytes()), socket,
-		packet.getSocketAddress());
-
-	return false;
     }
 
     /**

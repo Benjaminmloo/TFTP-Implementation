@@ -101,7 +101,7 @@ public class ErrorSimulator extends TFTPConnection {
 		    } else if (errorSimMode == 4) {
 			simulateInvalidFormat(receivePacket, receiveAddress, false);
 		    } else if (errorSimMode == 5) {
-			simulateUnknownTID(receivePacket, clientAddress, false);
+			simulateUnknownTID(receivePacket, receiveAddress, false);
 		    }
 		} else {
 		    send(Arrays.copyOf(receivePacket.getData(), receivePacket.getLength()), mediatorSocket,
@@ -331,16 +331,16 @@ public class ErrorSimulator extends TFTPConnection {
 	print("SIMULATING UNKNOWN TID\n");
 
 	if (firstPass)
-	    send(Arrays.copyOf(packet.getData(), packet.getLength()), mediatorSocket, InetAddress.getLocalHost(),
+	    send(Arrays.copyOf(packet.getData(), packet.getLength()), errorSocket, InetAddress.getLocalHost(),
 		    serverPort);
 	else
-	    send(Arrays.copyOf(packet.getData(), packet.getLength()), mediatorSocket, address);
+	    send(Arrays.copyOf(packet.getData(), packet.getLength()), errorSocket, address);
 
 	try {
 	    receive(errorSocket);
-	}catch(IllegalArgumentException e) {
+	} catch (IllegalArgumentException e) {
 	    e.printStackTrace();
-	}catch (SocketTimeoutException e) {
+	} catch (SocketTimeoutException e) {
 	    e.printStackTrace();
 	}
 
