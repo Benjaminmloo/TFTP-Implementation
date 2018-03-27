@@ -72,7 +72,7 @@ public class UserInterface {
 	tabPane2 = new JTabbedPane();
 	tabPane3 = new JTabbedPane();
 	inputField = new JTextField();
-	inputField.addActionListener(new InputController(inputField));
+	inputField.addActionListener(new InputListener(inputField));
 
 	clientArea = client.getOutputWindow();
 	clientArea.setEditable(false);
@@ -178,10 +178,10 @@ public class UserInterface {
      * Used for I/O
      */
 
-    public class InputController implements ActionListener {
+    public class InputListener implements ActionListener {
 	JTextField field;
 
-	public InputController(JTextField f) {
+	public InputListener(JTextField f) {
 	    field = f;
 	}
 
