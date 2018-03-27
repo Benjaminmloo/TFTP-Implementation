@@ -1,7 +1,5 @@
 package tftpConnection;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -9,6 +7,8 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * @author Benjamin Loo
@@ -21,8 +21,8 @@ public class ErrorSimulator extends TFTPConnection {
     private SocketAddress clientAddress, serverAddress;
     // private String input;
     private int errorSimMode, errorSimBlock, errorSimDelay, errorSimType;
-    private boolean errorSim4OpCode, errorSim4File, errorSim4Mode;
-
+    private int newOpCode, newNum;
+    private String newField;
     // Class Variable definition finish
 
     private int eSimPort, serverPort = 69;
@@ -104,7 +104,8 @@ public class ErrorSimulator extends TFTPConnection {
 			simulateUnknownTID(receivePacket, clientAddress, false);
 		    }
 		} else {
-		    send(receivePacket.getData(), mediatorSocket, receiveAddress);
+		    send(Arrays.copyOf(receivePacket.getData(), receivePacket.getLength()), mediatorSocket,
+			    receiveAddress);
 		}
 
 		if (TFTPPacket.getType(receivePacket) == TFTPPacket.OP_ERROR
@@ -112,6 +113,8 @@ public class ErrorSimulator extends TFTPConnection {
 				&& TFTPPacket.getDataLength(lastPacket) < MAX_DATA_SIZE)
 		    break;
 
+	    } catch (IllegalArgumentException e) {
+		e.printStackTrace();
 	    } catch (SocketTimeoutException e) {
 		e.printStackTrace();
 		System.exit(1);
@@ -146,7 +149,8 @@ public class ErrorSimulator extends TFTPConnection {
 			    simulateUnknownTID(initialPacket, serverAddress, true);
 			}
 		    } else {
-			send(initialPacket.getData(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
+			send(Arrays.copyOf(initialPacket.getData(), initialPacket.getLength()), mediatorSocket,
+				InetAddress.getLocalHost(), serverPort);
 		    }
 
 		} catch (UnknownHostException e) {
@@ -170,14 +174,14 @@ public class ErrorSimulator extends TFTPConnection {
 			simulateUnknownTID(responsePacket, clientAddress, false);
 		    }
 		} else {
-		    send(responsePacket.getData(), mediatorSocket, clientAddress);
+		    send(Arrays.copyOf(initialPacket.getData(), initialPacket.getLength()), mediatorSocket,
+			    clientAddress);
 		}
 
 		if (TFTPPacket.getType(responsePacket) == TFTPPacket.OP_ERROR)
 		    continue;
-		println("starting mediation");
+
 		mediateTransfer();
-		println("ending mediation");
 
 	    } catch (SocketTimeoutException | UnknownHostException e1) {
 		e1.printStackTrace();
@@ -231,6 +235,11 @@ public class ErrorSimulator extends TFTPConnection {
 	    e.printStackTrace();
 	}
 
+	if (firstPass)
+	    send(Arrays.copyOf(packet.getData(), packet.getLength()), mediatorSocket, InetAddress.getLocalHost(),
+		    serverPort);
+	else
+	    send(Arrays.copyOf(packet.getData(), packet.getLength()), mediatorSocket, address);
 	clearErrorSim();
     }
 
@@ -250,7 +259,12 @@ public class ErrorSimulator extends TFTPConnection {
 	    throws UnknownHostException {
 
 	print("THIS PACKET WILL BE DUPLICATED\n");
-	send(packet.getData(), mediatorSocket, address);
+
+	if (firstPass)
+	    send(Arrays.copyOf(packet.getData(), packet.getLength()), mediatorSocket, InetAddress.getLocalHost(),
+		    serverPort);
+	else
+	    send(Arrays.copyOf(packet.getData(), packet.getLength()), mediatorSocket, address);
 
 	// delay the packet
 	try {
@@ -260,7 +274,11 @@ public class ErrorSimulator extends TFTPConnection {
 	    e.printStackTrace();
 	}
 
-	send(packet.getData(), mediatorSocket, address);
+	if (firstPass)
+	    send(Arrays.copyOf(packet.getData(), packet.getLength()), mediatorSocket, InetAddress.getLocalHost(),
+		    serverPort);
+	else
+	    send(Arrays.copyOf(packet.getData(), packet.getLength()), mediatorSocket, address);
 	clearErrorSim();
 
     }
@@ -269,36 +287,28 @@ public class ErrorSimulator extends TFTPConnection {
 	    throws UnknownHostException {
 
 	print("THIS PACKET WILL BE \n INCORRECTLY FORMATED\n");
+	byte[] data = new byte[1000];
+	ByteBuffer buf = ByteBuffer.wrap(data);
 
-	ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-	try {
-	    outputStream.write(ZERO_BYTE);
-	    if (errorSim4OpCode)
-		outputStream.write(ZERO_BYTE);
-	    else
-		outputStream.write(errorSimType);
-
-	    if (errorSim4File)
-		outputStream.write(ZERO_BYTE);
-	    else
-		outputStream.write(packet.getData());
-
-	    outputStream.write(ZERO_BYTE);
-	    if (errorSim4Mode)
-		outputStream.write(ZERO_BYTE);
-	    else
-		outputStream.write(MODE_OCTET);
-	    outputStream.write(ZERO_BYTE);
-
-	} catch (IOException e1) {
-	    e1.printStackTrace();
+	if (newOpCode >= 0) {
+	    buf.put(new byte[] { (byte) (newOpCode / 256), (byte) (newOpCode % 256) });
 	}
 
-	if (!firstPass)
-	    send(outputStream.toByteArray(), mediatorSocket, address);
-	else
-	    send(outputStream.toByteArray(), mediatorSocket, InetAddress.getLocalHost(), serverPort);
+	if (newNum >= 0) {
+	    buf.put(new byte[] { (byte) (newNum / 256), (byte) (newNum % 256) });
+	}
 
+	if (newField != null) {
+	    buf.put(newField.getBytes());
+	}
+
+	data = Arrays.copyOf(data, buf.position() - 1);
+
+	if (firstPass)
+	    send(Arrays.copyOf(packet.getData(), packet.getLength()), mediatorSocket, InetAddress.getLocalHost(),
+		    serverPort);
+	else
+	    send(Arrays.copyOf(packet.getData(), packet.getLength()), mediatorSocket, address);
 	clearErrorSim();
     }
 
@@ -320,14 +330,17 @@ public class ErrorSimulator extends TFTPConnection {
 
 	print("SIMULATING UNKNOWN TID\n");
 
-	if (!firstPass)
-	    send(packet.getData(), errorSocket, address);
+	if (firstPass)
+	    send(Arrays.copyOf(packet.getData(), packet.getLength()), mediatorSocket, InetAddress.getLocalHost(),
+		    serverPort);
 	else
-	    send(packet.getData(), errorSocket, InetAddress.getLocalHost(), serverPort);
+	    send(Arrays.copyOf(packet.getData(), packet.getLength()), mediatorSocket, address);
 
 	try {
 	    receive(errorSocket);
-	} catch (SocketTimeoutException e) {
+	}catch(IllegalArgumentException e) {
+	    e.printStackTrace();
+	}catch (SocketTimeoutException e) {
 	    e.printStackTrace();
 	}
 
@@ -354,15 +367,14 @@ public class ErrorSimulator extends TFTPConnection {
      * @author Eric
      */
 
-    public void setParameters(int mode, int block, int delay, int type, boolean opCode, boolean file,
-	    boolean modeSym4) {
+    public void setParameters(int mode, int block, int delay, int type, int opCode, int num, String field) {
 	errorSimMode = mode;
 	errorSimBlock = block;
 	errorSimDelay = delay;
 	errorSimType = type;
-	errorSim4OpCode = opCode;
-	errorSim4File = file;
-	errorSim4Mode = modeSym4;
+	newOpCode = opCode;
+	newNum = num;
+	newField = field;
     }
 
     @Override
@@ -371,7 +383,7 @@ public class ErrorSimulator extends TFTPConnection {
     }
 
     void clearErrorSim() {
-	setParameters(-1, -1, -1, -1, false, false, false);
+	setParameters(-1, -1, -1, -1, -1, -1, null);
     }
 
     /**

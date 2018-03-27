@@ -106,6 +106,7 @@ public abstract class TFTPPacket {
     public static byte[] createError(int error, byte[] msg) {
 	byte[] packet = new byte[5 + msg.length];
 	ByteBuffer dBuff = ByteBuffer.wrap(packet);
+
 	dBuff.put(new byte[] { 0, OP_ERROR, (byte) (error / 256), (byte) (error % 256) });
 	dBuff.put(msg);
 	dBuff.put((byte) 0);
@@ -137,9 +138,9 @@ public abstract class TFTPPacket {
 	for (index = offset; index < dataLength && packet[index] != 0; index++) {
 	    data[index - offset] = packet[index];
 	}
-	return Arrays.copyOfRange(data, 0, index - offset);
+	return Arrays.copyOf(data, index - offset);
     }
-    
+
     /**
      * Authenticates packet
      * 
@@ -147,49 +148,47 @@ public abstract class TFTPPacket {
      * @param packet
      * @throws IOException
      */
-    public static void checkPacket(DatagramPacket packet) throws IOException
-    {
+    public static void checkPacket(DatagramPacket packet) throws IOException {
 	byte[] data = packet.getData();
 	int size = packet.getLength();
 	byte zero = 0;
 	Set<Byte> validPackets = PacketTypes.keySet();
-	if( data[0] == zero && validPackets.contains(data[1]) ) //Checks packet type formatting
+	if (data[0] == zero && validPackets.contains(data[1])) // Checks packet type formatting
 	{
-	    switch(data[1])
+	    switch (data[1]) {
+	    case (byte) 1:
+	    case (byte) 2: /* RRQ & WRQ Packet */
 	    {
-	    case (byte)1:
-	    case (byte)2: /*	RRQ & WRQ Packet */	
-	    {
-		if(data[size + 1] == zero)
-			if(data[-1] == zero)
-			{
-			    System.out.println("Packet Authenticated\n");
-			    return;
-			}
+		if (data[size + 1] == zero)
+		    if (data[-1] == zero) {
+			System.out.println("Packet Authenticated\n");
+			return;
+		    }
 		break;
 	    }
-	    case (byte)3: /*	DATA Packet */
+	    case (byte) 3: /* DATA Packet */
 	    {
-		if(data[2] == zero && data[3] == zero)
+		if (data[2] == zero && data[3] == zero)
 		    break;
 		return;
 	    }
-	    case (byte)4: /*	ACK Packet */
+	    case (byte) 4: /* ACK Packet */
 	    {
-		if(data[2] == zero && data[3] == zero)
+		if (data[2] == zero && data[3] == zero)
 		    break;
 		return;
 	    }
-	    case (byte)5: /*	ERROR Packet */
+	    case (byte) 5: /* ERROR Packet */
 	    {
-		if(data[2] == zero && data[3] == zero)
+		if (data[2] == zero && data[3] == zero)
 		    break;
 		return;
 	    }
-	    } 
+	    }
 	}
 	throw new IOException();
     }
+
     /**
      * Converts byte[] to string using utf-8 encoding when available uses default
      * when utf-8 isn't available

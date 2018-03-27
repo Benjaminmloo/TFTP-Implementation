@@ -6,7 +6,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -46,7 +45,6 @@ public class UserInterface {
 	errorSim = new ErrorSimulator();
 	client = new Client(serverAddress, errorSim);
 	server = new Server(69);
-	
 
 	frame = new JFrame("File Transfer System");
 	ImageIcon frameImage = new ImageIcon("Misc//icon.png");
@@ -131,18 +129,17 @@ public class UserInterface {
 	inputPanel.add(new JLabel("Input commands here: "));
 	inputPanel.add(inputField);
 
-	/* The old interface if we want to revert back.
- 	outputPanel.setLayout(new BoxLayout(outputPanel, BoxLayout.Y_AXIS));
-
-	outputPanel.add(tabPane, gbc);
-	outputPanel.add(new JLabel("Input commands here: "), gbc);
-	outputPanel.add(inputField, gbc); 
-	*/
+	/*
+	 * The old interface if we want to revert back. outputPanel.setLayout(new
+	 * BoxLayout(outputPanel, BoxLayout.Y_AXIS));
+	 * 
+	 * outputPanel.add(tabPane, gbc); outputPanel.add(new
+	 * JLabel("Input commands here: "), gbc); outputPanel.add(inputField, gbc);
+	 */
 
 	frame.setJMenuBar(menuBar);
 	frame.add(outputPanel, BorderLayout.CENTER);
 	frame.add(inputPanel, BorderLayout.SOUTH);
-	
 
 	frame.pack();
 	frame.setVisible(true);
@@ -213,33 +210,30 @@ public class UserInterface {
 	    }
 	}
     }
-    
-    public class MenuListener implements ActionListener
-    {
+
+    public class MenuListener implements ActionListener {
+
 	@Override
 	public void actionPerformed(ActionEvent e) {
 	    JMenuItem item = (JMenuItem) e.getSource();
-	    
-	    switch (item.getText())
-	    {
-	    	case "Client IP":
-	    	{
-	    	try {
+
+	    switch (item.getText()) {
+	    case "Client IP": {
+		try {
 		    InetAddress clientAddress = InetAddress.getLocalHost();
 		    JOptionPane.showMessageDialog(frame, clientAddress.toString());
 		} catch (UnknownHostException ue) {
 		    ue.printStackTrace();
 		}
-	    	break;
-	    	}
-	    	case "Server IP":
-	    	{
-	    	    String in = (String)JOptionPane.showInputDialog(frame, "Current server " + serverAddress + "\nEnter new address\n");
-	    	    if(in != null && in.length() > 0)
-	    	    {
-	    		try {
-	    		    serverAddress = InetAddress.getByName(in);
-	    		} catch (UnknownHostException e1) {
+		break;
+	    }
+	    case "Server IP": {
+		String in = (String) JOptionPane.showInputDialog(frame,
+			"Current server " + serverAddress + "\nEnter new address\n");
+		if (in != null && in.length() > 0) {
+		    try {
+			serverAddress = InetAddress.getByName(in);
+		    } catch (UnknownHostException e1) {
 			// TODO Auto-generated catch block
 	    		    e1.printStackTrace();
 	    		    JOptionPane.showMessageDialog(frame, "Invalid server address");

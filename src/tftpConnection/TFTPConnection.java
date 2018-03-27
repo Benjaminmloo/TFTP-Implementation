@@ -147,12 +147,16 @@ public abstract class TFTPConnection {
 
 		    break; // if packet was sent and the apropriate ack was received break out of
 			   // retransmit loop
+		} catch(IllegalArgumentException e) {
+		    return;
 		} catch (SocketTimeoutException e) { // default timeout is 2 seconds
 		    if (verbose)
-			println("Time out");
+			println("Time Out");
 		    if (j >= TRANSMIT_LIMIT) {
 			print("Connection timed out \n Stopping transfer");
 			return;
+		    } else {
+			println("Retransmiting");
 		    }
 		}
 	    }
@@ -290,15 +294,15 @@ public abstract class TFTPConnection {
 		    } else {
 			return;
 		    }
+		} catch (IllegalArgumentException e) {
+		  return;  
 		} catch (SocketTimeoutException e) {
-		    if (verbose) {
-			if (i % 50 == 0)
-			    print("\n");
-			print(".");
-		    }
+		    println("Time Out");
 		    if (i >= TRANSMIT_LIMIT) {
 			print("Connection timed out \n Stopping transfer");
 			return;
+		    } else {
+			println("Retransmiting");
 		    }
 		}
 	    }
@@ -314,6 +318,7 @@ public abstract class TFTPConnection {
 
     /**
      * receives the next in order packet allows for the rejection of incorrect
+     * 
      * packets
      * 
      * @param socket
@@ -323,6 +328,7 @@ public abstract class TFTPConnection {
      * @return the next packet received in order, will return null if the max number
      *         of time outs is reached
      * @throws SocketTimeoutException
+     * @Deprecated
      * @author bloo
      */
     protected DatagramPacket receiveNext(DatagramSocket socket) throws SocketTimeoutException {
@@ -340,6 +346,7 @@ public abstract class TFTPConnection {
      * @return the next packet received in order, will return null if the max number
      *         of time outs is reached
      * @throws SocketTimeoutException
+     * @Deprecated
      * @author bloo
      */
     protected DatagramPacket receiveNext(DatagramSocket socket, int length) throws SocketTimeoutException {
@@ -380,7 +387,7 @@ public abstract class TFTPConnection {
      * @author bloo
      * @throws SocketTimeoutException
      */
-    protected DatagramPacket receive(DatagramSocket socket) throws SocketTimeoutException {
+    protected DatagramPacket receive(DatagramSocket socket) throws SocketTimeoutException, IllegalArgumentException {
 	return receive(socket, MAX_PACKET_SIZE);
     }
 
@@ -396,32 +403,30 @@ public abstract class TFTPConnection {
      * @author bloo
      * @throws SocketTimeoutException
      */
-    protected DatagramPacket receive(DatagramSocket socket, int length) throws SocketTimeoutException {
+    protected DatagramPacket receive(DatagramSocket socket, int length) throws SocketTimeoutException, IllegalArgumentException {
 	DatagramPacket receivedPacket;
 
-	while (true) {
-	    receivedPacket = new DatagramPacket(new byte[length], length);
+	receivedPacket = new DatagramPacket(new byte[length], length);
 
-	    try {
-		socket.receive(receivedPacket);
-		if (!isValid(receivedPacket, socket))
-		    continue;
+	try {
+	    socket.receive(receivedPacket);
 
-		if (verbose) {
-		    println("received: ");
-		    println(TFTPPacket.packetToString(receivedPacket));
-		}
-
-		return receivedPacket;
-
-	    } catch (IOException e) {
-		if (e instanceof SocketTimeoutException)
-		    throw (SocketTimeoutException) e;
-		e.printStackTrace();
-		System.exit(1);
+	    validate(receivedPacket, socket);
+	    
+	    if (verbose) {
+		println("received: ");
+		println(TFTPPacket.packetToString(receivedPacket));
 	    }
-	    return new DatagramPacket(new byte[0], 0);
+
+	    return receivedPacket;
+
+	}catch (IOException e) {
+	    if (e instanceof SocketTimeoutException)
+		throw (SocketTimeoutException) e;
+	    e.printStackTrace();
+	    System.exit(1);
 	}
+	return new DatagramPacket(new byte[0], 0);
 
     }
 
@@ -458,10 +463,10 @@ public abstract class TFTPConnection {
      * @throws IOException
      * @author Benjamin, BLoo
      */
-    public boolean isValid(DatagramPacket packet, DatagramSocket socket) {
+    public boolean validate(DatagramPacket packet, DatagramSocket socket) throws IllegalArgumentException{
+	boolean valid = false;
 	byte[] data = packet.getData();
 	byte[] hold;
-
 	Set<Byte> validPackets = TFTPPacket.PacketTypes.keySet();
 	if (data[0] == ZERO_BYTE && validPackets.contains(data[1])) // Checks packet type formatting
 	{
@@ -470,11 +475,11 @@ public abstract class TFTPConnection {
 	    case (byte) 2: /* RRQ & WRQ Packet */
 	    {
 		hold = TFTPPacket.readToStop(2, packet.getData(), packet.getLength());
+
 		if (hold != null) {
 		    int i = hold.length + 3;
 		    i += TFTPPacket.readToStop(hold.length + 3, packet.getData(), packet.getLength()).length;
-		    System.out.println(i + ", " + (packet.getLength() - 1));
-		    return i == packet.getLength() - 1;
+		    valid = i == packet.getLength() - 1;
 		}
 		/*
 		 * Find offset of mode field by reading the first field and adding that fields
@@ -484,28 +489,30 @@ public abstract class TFTPConnection {
 	    case (byte) 3: /* DATA Packet */
 	    {
 		hold = TFTPPacket.readToStop(4, data, packet.getLength());
-		System.out.println((hold != null) + ", " + (hold.length) + "," + (packet.getLength() - 4));
-		return (hold != null && hold.length == packet.getLength() - 4);
+		valid =  (hold != null && hold.length == packet.getLength() - 4);
 	    }
 	    case (byte) 4: /* ACK Packet */
 	    {
-		System.out.println(packet.getLength() + ", " + 4);
-		return packet.getLength() == 4;
+		valid =  packet.getLength() == 4;
 	    }
 	    case (byte) 5: /* ERROR Packet */
 	    {
 		hold = TFTPPacket.readToStop(4, packet.getData(), packet.getLength());
-		System.out.println((hold != null) + ", " + (hold.length) + ", " + (packet.getLength() - 5));
-		return (hold != null && hold.length == packet.getLength() - 5);
+		valid = (hold != null && hold.length == packet.getLength() - 5);
 	    }
 	    }
 	}
 
-	if (socket != null)
-	    send(TFTPPacket.createError(4, "Illegal TFTP operation.".getBytes()), socket, packet.getSocketAddress());
-	return false;
+	if(!valid) {
+	    println("Received Invlaid Packet");
+	    if (socket != null)
+		send(TFTPPacket.createError(4, "Illegal TFTP operation.".getBytes()), socket, packet.getSocketAddress());
+	    throw new IllegalArgumentException("Illegal TFTP operation.");
+	}
+	return valid;
     }
 
+    // #TODO move to test class
     private void isValidTest() {
 	byte[] file = "test.txt".getBytes();
 	byte[] contents = new byte[512];
@@ -525,15 +532,15 @@ public abstract class TFTPConnection {
 	ack = TFTPPacket.createAck(5);
 	error = TFTPPacket.createError((byte) 1, MODE_OCTET);
 
-	System.out.println("rrq test: " + isValid(new DatagramPacket(rrq, rrq.length), null));
+	System.out.println("rrq test: " + validate(new DatagramPacket(rrq, rrq.length), null));
 
-	System.out.println("wrq test: " + isValid(new DatagramPacket(wrq, wrq.length), null));
+	System.out.println("wrq test: " + validate(new DatagramPacket(wrq, wrq.length), null));
 
-	System.out.println("data test: " + isValid(new DatagramPacket(data, data.length), null));
+	System.out.println("data test: " + validate(new DatagramPacket(data, data.length), null));
 
-	System.out.println("ack test: " + isValid(new DatagramPacket(ack, ack.length), null));
+	System.out.println("ack test: " + validate(new DatagramPacket(ack, ack.length), null));
 
-	System.out.println("error test: " + isValid(new DatagramPacket(error, error.length), null));
+	System.out.println("error test: " + validate(new DatagramPacket(error, error.length), null));
     }
 
     protected boolean isFrom(DatagramPacket packet, DatagramSocket socket, SocketAddress expectedSender) {
@@ -655,4 +662,6 @@ public abstract class TFTPConnection {
 	    super(msg);
 	}
     }
+    
+    
 }

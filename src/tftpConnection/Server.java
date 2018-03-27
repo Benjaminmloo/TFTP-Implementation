@@ -162,10 +162,11 @@ public class Server extends TFTPConnection {
 
 	@Override
 	public void run() {
+	    println("starting");
 	    while (cont) {
 		try {
 		    receivedPacket = receive(requestSocket); // wait for new request packet
-		    //TFTPPacket.checkPacket(receivedPacket);
+		    // TFTPPacket.checkPacket(receivedPacket);
 		    if (receivedPacket != null)
 			new Thread(new ThreadedConnection(receivedPacket, verbose, outputWindow)).start(); // start new
 													   // client
