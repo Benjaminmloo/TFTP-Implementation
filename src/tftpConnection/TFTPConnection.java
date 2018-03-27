@@ -135,6 +135,7 @@ public abstract class TFTPConnection {
 		    do {
 			ackPacket = receive(socket);
 			if (isLast(ackPacket)) {
+			    print("Was Last");
 			    send(lastSentPkt, socket);
 			    continue;
 			}
@@ -216,7 +217,8 @@ public abstract class TFTPConnection {
 	    }
 
 	    socket.send(sendPacket);
-	    lastSentPkt = sendPacket;
+	    if(TFTPPacket.getType(sendPacket) != TFTPPacket.OP_ERROR)
+		lastSentPkt = sendPacket;
 	} catch (IOException e) {
 	    socket.close();
 	    e.printStackTrace();
@@ -463,6 +465,7 @@ public abstract class TFTPConnection {
 			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt) + 1)
 		|| TFTPPacket.getType(packet) == TFTPPacket.OP_ERROR)
 	    return true;
+	print("Wasn't next ");
 	return false;
     }
 
