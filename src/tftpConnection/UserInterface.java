@@ -33,17 +33,9 @@ public class UserInterface {
 
     DefaultCaret caret;
 
-    private InetAddress serverAddress;
-
     public UserInterface() {
-	try {
-	    serverAddress = InetAddress.getLocalHost();
-	} catch (UnknownHostException e) {
-	    e.printStackTrace();
-	    JOptionPane.showMessageDialog(frame, "Default Host initialization error\n");
-	}
 	errorSim = new ErrorSimulator();
-	client = new Client(serverAddress, errorSim);
+	client = new Client(errorSim);
 	server = new Server(69);
 
 	frame = new JFrame("File Transfer System");
@@ -229,10 +221,10 @@ public class UserInterface {
 	    }
 	    case "Server IP": {
 		String in = (String) JOptionPane.showInputDialog(frame,
-			"Current server " + serverAddress + "\nEnter new address\n");
+			"Current server " + client.getServerAddress() + "\nEnter new address\n");
 		if (in != null && in.length() > 0) {
 		    try {
-			serverAddress = InetAddress.getByName(in);
+			client.setServerAddress(InetAddress.getByName(in));
 		    } catch (UnknownHostException e1) {
 			// TODO Auto-generated catch block
 	    		    e1.printStackTrace();
@@ -246,7 +238,7 @@ public class UserInterface {
 	    	case "Reset Server IP":
 	    	{
 	    	try {
-		    serverAddress = InetAddress.getLocalHost();
+	    	    client.setServerAddress(InetAddress.getLocalHost());
 		} catch (UnknownHostException ue) {
 		    ue.printStackTrace();
 		    JOptionPane.showMessageDialog(frame, "Default Host initialization error\n");

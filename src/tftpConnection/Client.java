@@ -19,18 +19,18 @@ public class Client extends TFTPConnection {
     private ErrorSimulator errorSim;
     private InetAddress serverAddress;
 
-    public Client(InetAddress server, ErrorSimulator errorSim) {
-	this.verbose = true;
-	this.errorSim = errorSim;
-	serverAddress = server;
-
-    }
-
     public Client(ErrorSimulator errorSim) {
 	this.verbose = true;
-	serverAddress = null;
 	this.errorSim = errorSim;
+	try {
+	    serverAddress = InetAddress.getLocalHost();
+	} catch (UnknownHostException e) {
+	    // TODO Auto-generated catch block
+	    e.printStackTrace();
+	    System.exit(1);
+	}
     }
+
 
     /**
      * Basic UI, gets input from user ** WILL be upgraded in future iterations.
@@ -464,6 +464,16 @@ public class Client extends TFTPConnection {
 		notifyAll();
 	    }
 	}
+    }
+    
+    public InetAddress getServerAddress()
+    {
+	return this.serverAddress;
+    }
+    
+    public void setServerAddress(InetAddress address)
+    {
+	this.serverAddress = address;
     }
 
     /**
