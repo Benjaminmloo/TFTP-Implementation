@@ -174,7 +174,7 @@ public class ErrorSimulator extends TFTPConnection {
 			simulateUnknownTID(responsePacket, clientAddress, false);
 		    }
 		} else {
-		    send(Arrays.copyOf(initialPacket.getData(), initialPacket.getLength()), mediatorSocket,
+		    send(Arrays.copyOf(responsePacket.getData(), responsePacket.getLength()), mediatorSocket,
 			    clientAddress);
 		}
 

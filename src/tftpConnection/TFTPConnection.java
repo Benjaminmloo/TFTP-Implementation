@@ -135,7 +135,6 @@ public abstract class TFTPConnection {
 		    do {
 			ackPacket = receive(socket);
 			if (isLast(ackPacket)) {
-			    print("Was Last");
 			    send(lastSentPkt, socket);
 			    continue;
 			}
@@ -435,7 +434,6 @@ public abstract class TFTPConnection {
     protected boolean isFrom(DatagramPacket packet, DatagramSocket socket, SocketAddress expectedSender) {
         if (packet.getSocketAddress().equals(expectedSender))
             return true;
-        println("ins't from partner");
         send(TFTPPacket.createError(5, "Packet received from an unrecognised TID".getBytes()), socket,
         	packet.getSocketAddress());
     
@@ -465,7 +463,6 @@ public abstract class TFTPConnection {
 			&& TFTPPacket.getBlockNum(packet) == TFTPPacket.getBlockNum(lastSentPkt) + 1)
 		|| TFTPPacket.getType(packet) == TFTPPacket.OP_ERROR)
 	    return true;
-	print("Wasn't next ");
 	return false;
     }
 

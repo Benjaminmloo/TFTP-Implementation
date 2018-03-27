@@ -360,7 +360,7 @@ public class Client extends TFTPConnection {
 	} catch (UnknownHostException e) {
 	    e.printStackTrace();
 	    System.exit(1);
-	} catch(IllegalArgumentException e) {
+	} catch (IllegalArgumentException e) {
 	    e.printStackTrace();
 	    return;
 	} catch (IOException e) {
