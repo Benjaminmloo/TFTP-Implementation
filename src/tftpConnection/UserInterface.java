@@ -49,6 +49,8 @@ public class UserInterface {
 	
 
 	frame = new JFrame("File Transfer System");
+	ImageIcon frameImage = new ImageIcon("Misc//icon.png");
+	frame.setIconImage(frameImage.getImage());
 	frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 	MenuListener menuListener = new MenuListener();
@@ -59,7 +61,8 @@ public class UserInterface {
 	clientIP.addActionListener(menuListener);
 	JMenuItem editServer = new JMenuItem("Server IP");
 	editServer.addActionListener(menuListener);
-	JMenuItem resetServer = new JMenuItem("Reset IP");
+	JMenuItem resetServer = new JMenuItem("Reset Server "
+		+ "IP");
 	resetServer.addActionListener(menuListener);
 	fileMenu.add(clientIP);
 	fileMenu.add(editServer);
@@ -247,7 +250,7 @@ public class UserInterface {
 	    	    }
 	    	break;
 	    	}    
-	    	case "Reset IP":
+	    	case "Reset Server IP":
 	    	{
 	    	try {
 		    serverAddress = InetAddress.getLocalHost();
@@ -256,6 +259,7 @@ public class UserInterface {
 		    JOptionPane.showMessageDialog(frame, "Default Host initialization error\n");
 		    break;
 		}
+	    	JOptionPane.showMessageDialog(frame, "Server IP Reset");
 	    	break;
 	    	}
 	    	    
