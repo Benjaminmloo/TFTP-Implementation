@@ -25,12 +25,10 @@ public class Client extends TFTPConnection {
 	try {
 	    serverAddress = InetAddress.getLocalHost();
 	} catch (UnknownHostException e) {
-	    // TODO Auto-generated catch block
 	    e.printStackTrace();
 	    System.exit(1);
 	}
     }
-
 
     /**
      * Basic UI, gets input from user ** WILL be upgraded in future iterations.
@@ -193,36 +191,36 @@ public class Client extends TFTPConnection {
 
 				    if (input.equals("1")) { // Lose Packet Simulation
 					errorSimMode = 1;
-					errorSimBlock = getPosInt("Enter block num ( >= 0): ");
-					errorSimType = getPacketType();
+					errorSimBlock = waitForPosInt("Enter block num ( >= 0): ");
+					errorSimType = waitForPacketType();
 
 				    } else if (input.equals("2")) { // Delay Packet Simulation
 					errorSimMode = 2;
-					errorSimBlock = getPosInt("Enter block num ( >= 0): ");
-					errorSimType = getPacketType();
-					errorSimDelay = getPosInt("Delay (ms):  ");
+					errorSimBlock = waitForPosInt("Enter block num ( >= 0): ");
+					errorSimType = waitForPacketType();
+					errorSimDelay = waitForPosInt("Delay (ms):  ");
 
 				    } else if (input.equals("3")) { // Duplicate Packet Simulation
 					errorSimMode = 3;
-					errorSimBlock = getPosInt("Enter block num ( >= 0): ");
-					errorSimType = getPacketType();
-					errorSimDelay = getPosInt("Delay (ms):  ");
+					errorSimBlock = waitForPosInt("Enter block num ( >= 0): ");
+					errorSimType = waitForPacketType();
+					errorSimDelay = waitForPosInt("Delay (ms):  ");
 
 				    } else if (input.equals("4")) { // Simulate invalid packet format
 					errorSimMode = 4;
-					errorSimBlock = getPosInt("Enter block num ( >= 0): ");
-					errorSimType = getPacketType();
+					errorSimBlock = waitForPosInt("Enter block num ( >= 0): ");
+					errorSimType = waitForPacketType();
 
 					print("Enter the new packet information");
-					newOpCode = getPosInt("Enter Opcode ( >= 0): ");
-					newNum = getPosInt("Enter second number ( >= 0): ");
-					newField = getString(
+					newOpCode = waitForPosInt("Enter Opcode ( >= 0): ");
+					newNum = waitForPosInt("Enter second number ( >= 0): ");
+					newField = waitForString(
 						"Enter data fields(be sure to include field terminating '0' when needed): ");
 
 				    } else if (input.equals("5")) { // Simulate unknown TID
 					errorSimMode = 5;
-					errorSimBlock = getPosInt("Enter block num ( >= 0): ");
-					errorSimType = getPacketType();
+					errorSimBlock = waitForPosInt("Enter block num ( >= 0): ");
+					errorSimType = waitForPacketType();
 
 				    } else {
 					throw new InputMismatchException();
@@ -306,6 +304,22 @@ public class Client extends TFTPConnection {
      * Establishes either a WRQ or RRQ connection to the server, depending on user
      * specification
      * 
+     * @param requestType
+     *            - 1 or 2 for wrq and rrq respectively
+     * @param localFile
+     *            - The local file that will be operated on
+     * @param serverFile
+     *            - The file on the server that the client is sending a request to
+     *            operate on
+     * @param port
+     *            - The port number the request will be sent
+     * @param errorSimMode
+     *            - The type of error that will be simulated <= 0 for no error
+     * @param errorSimBlock
+     *            - The block number the error will occur on
+     * @param errorSimDelay
+     *            - The time delay for the current error
+     * 
      * @author Benjamin, Andrew, Eric, BLoo
      */
     public void establishConnection(byte requestType, String localFile, String serverFile, int port, int errorSimMode,
@@ -324,15 +338,7 @@ public class Client extends TFTPConnection {
 	    }
 	}
 
-	connectionSocket = waitForSocket(); // Requests usable socket. If success, new DatagramSocket()
-
-	// Setting up time to wait for data before timeout and retransmission.
-	try {
-	    connectionSocket.setSoTimeout(2000); // 2 seconds
-	} catch (Exception se) {
-	    se.printStackTrace();
-	    System.exit(1);
-	}
+	connectionSocket = waitForSocket(-1, 2000); // Requests usable socket. If success, new DatagramSocket()
 
 	try {
 	    send(TFTPPacket.createRQ(requestType, serverFile.getBytes(), MODE_OCTET), connectionSocket,
@@ -349,14 +355,17 @@ public class Client extends TFTPConnection {
 		if (TFTPPacket.getType(ackPacket) == TFTPPacket.OP_ACK) { // If server has given acknowledge to write
 
 		} else if (TFTPPacket.getType(ackPacket) == TFTPPacket.OP_ERROR) {
-		    System.err.println("\n" + TFTPPacket.packetToString(ackPacket)); // if the error packet hasn't
-										     // already
-										     // been printed
+		    System.err.println("\n" + TFTPPacket.toString(ackPacket)); // if the error packet hasn't
+									       // already
+									       // been printed
 		}
 	    } else if (requestType == TFTPPacket.OP_RRQ) {
 		receiveFile(connectionSocket, localFile);
 
 	    }
+	} catch (SocketTimeoutException e) {
+	    if (verbose)
+		println("Request response timed out");
 	} catch (UnknownHostException e) {
 	    e.printStackTrace();
 	    System.exit(1);
@@ -368,7 +377,7 @@ public class Client extends TFTPConnection {
 	}
     }
 
-    private String getString(String msg) {
+    private String waitForString(String msg) {
 	String inputString;
 
 	while (true) {
@@ -395,7 +404,7 @@ public class Client extends TFTPConnection {
 	}
     }
 
-    private int getPosInt(String msg) {
+    private int waitForPosInt(String msg) {
 	int inputInt;
 	while (true) {
 	    input = null;
@@ -429,7 +438,7 @@ public class Client extends TFTPConnection {
      * 
      * @author Eric
      */
-    public int getPacketType() {
+    private int waitForPacketType() {
 	int type;
 	while (true) {
 	    input = null;
@@ -465,30 +474,20 @@ public class Client extends TFTPConnection {
 	    }
 	}
     }
-    
-    public InetAddress getServerAddress()
-    {
+
+    public InetAddress getServerAddress() {
 	return this.serverAddress;
     }
-    
-    public void setServerAddress(InetAddress address)
-    {
+
+    public void setServerAddress(InetAddress address) {
 	this.serverAddress = address;
     }
 
     /**
-     * closes the datagram socket and quits the program
-     * 
-     * @Eric
-     */
-    public void closeConnection(DatagramSocket socket) {
-	socket.close();
-	System.exit(1);
-    }
-
-    /*
      * synchronized takeInput To ensure that threads are aware of the changes made
      * from other threads. This will allow threads to access in an atomic way.
+     * 
+     * @author BLoo
      */
     @Override
     public synchronized void takeInput(String s) {

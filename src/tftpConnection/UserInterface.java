@@ -198,7 +198,7 @@ public class UserInterface {
 	    } else if (connection instanceof ErrorSimulator) {
 		((ErrorSimulator) connection).startPassthrough();
 	    } else if (connection instanceof Server) {
-		/* <<DEPRECATED>> ((Server) connection).userInterface(); */
+		((Server) connection).userInterface();
 	    }
 	}
     }

@@ -47,8 +47,10 @@ public class ErrorSimulator extends TFTPConnection {
 
 	try {
 	    eSimSocket = new DatagramSocket(this.eSimPort);
-	    mediatorSocket = new DatagramSocket();
-	    errorSocket = new DatagramSocket();
+	    mediatorSocket = waitForSocket(-1, 10000);
+	    errorSocket = waitForSocket(-1, 10000);
+	    // get socket with timeouts so that error sim can still function not for actual
+	    // erro detection
 	} catch (SocketException e) {
 	    // eSimSocket.close();
 	    // mediatorSocket.close();
@@ -116,8 +118,9 @@ public class ErrorSimulator extends TFTPConnection {
 	    } catch (IllegalArgumentException e) {
 		e.printStackTrace();
 	    } catch (SocketTimeoutException e) {
-		e.printStackTrace();
-		System.exit(1);
+		if (verbose)
+		    println("Time out on socket. Assuming connection has been stopped");
+		return;
 	    } // wait to receive packet from client
 	}
     }
@@ -183,7 +186,11 @@ public class ErrorSimulator extends TFTPConnection {
 
 		mediateTransfer();
 
-	    } catch (SocketTimeoutException | UnknownHostException e1) {
+	    } catch (SocketTimeoutException e) {
+		if (verbose)
+		    println("Time out");
+	    } catch (UnknownHostException e1) {
+
 		e1.printStackTrace();
 		System.exit(1);
 	    }
@@ -283,6 +290,18 @@ public class ErrorSimulator extends TFTPConnection {
 
     }
 
+    /**
+     * Simulates a packet being incorrectly formated
+     * 
+     * @param packet
+     *            - Packet to be misformated
+     * @param address
+     *            - The address where the packet will be sent
+     * @param firstPass
+     *            - Whether the packet needs to be send as a request or not
+     * @throws UnknownHostException
+     * @author BLoo, Eric
+     */
     public void simulateInvalidFormat(DatagramPacket packet, SocketAddress address, boolean firstPass)
 	    throws UnknownHostException {
 
@@ -313,8 +332,8 @@ public class ErrorSimulator extends TFTPConnection {
     }
 
     /**
-     * Simulates unkown TID on a specific packet. ( sends the packet to the wrong
-     * address )
+     * Simulates unkown TID on a specific packet. ( sends the packet from a
+     * different address)
      * 
      * @param packet
      *            - Datagram packet
@@ -322,7 +341,7 @@ public class ErrorSimulator extends TFTPConnection {
      * @param address
      *            - data packet address
      * 
-     * @author Eric
+     * @author Eric, BLoo
      * @throws UnknownHostException
      */
     public void simulateUnknownTID(DatagramPacket packet, SocketAddress address, boolean firstPass)
@@ -379,22 +398,15 @@ public class ErrorSimulator extends TFTPConnection {
 
     @Override
     public void takeInput(String s) {
-	// input += s;
-    }
-
-    void clearErrorSim() {
-	setParameters(-1, -1, -1, -1, -1, -1, null);
+	return;
     }
 
     /**
-     * Control loop that mediates connection between client and server
+     * Clears the error sim fields
      * 
-     * @param args
-     * @author Bloo
+     * @author BLoo
      */
-    /*
-     * public static void main(String[] args) { ErrorSimulator h = new
-     * ErrorSimulator(23, 69, true); h.startPassthrough(); }
-     */
-
+    void clearErrorSim() {
+	setParameters(-1, -1, -1, -1, -1, -1, null);
+    }
 }

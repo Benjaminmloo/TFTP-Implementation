@@ -59,11 +59,11 @@ public class ThreadedConnection extends TFTPConnection implements Runnable {
      * Handles packet requests
      * 
      * @param packet
-     * @author BenjaminP
+     * @author BenjaminP, BLoo
      */
     private void requestHandler(DatagramPacket packet) {
 	byte request = this.getRequest(packet);
-	DatagramSocket handlerSocket = waitForSocket();
+	DatagramSocket handlerSocket = waitForSocket(-1, 2000);
 	String fileName = TFTPPacket.getFileName(packet);
 	try {
 	    switch (request) {
@@ -133,13 +133,13 @@ public class ThreadedConnection extends TFTPConnection implements Runnable {
     @Override
     public void run() {
 	if (verbose)
-	    println("starting new connection");
+	    println("\nStarting new connection");
 	requestHandler(requestPacket);
+	if (verbose)
+	    println("\nClosing Connection");
     }
 
     @Override
     public void takeInput(String s) {
-	// TODO Auto-generated method stub
-
     }
 }

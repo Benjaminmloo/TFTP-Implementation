@@ -1,10 +1,7 @@
 package tftpConnection;
 
-import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.util.InputMismatchException;
 
@@ -17,7 +14,7 @@ public class Server extends TFTPConnection {
     // Class Variable definition start
     private WaitForRequest waitThread;
     private String input;
-    boolean cont = true;
+    boolean cont;
 
     /**
      * Constructor for a Server
@@ -31,7 +28,9 @@ public class Server extends TFTPConnection {
     public Server(int serverPort, boolean verbose) {
 	this.input = null;
 	this.verbose = verbose;
-	waitThread = new WaitForRequest(waitForSocket(serverPort));
+	this.cont = true;
+
+	waitThread = new WaitForRequest(waitForSocket(serverPort, -1));
 	waitThread.start();
     }
 
@@ -47,18 +46,10 @@ public class Server extends TFTPConnection {
     }
 
     /**
-     * 
-     * methods the manages packet being received
-     * 
-     * sends any received packets to be processed by another method
-     * 
-     * @param threaded
-     *            flag to determine whether or not to use threads to wait for
-     *            request
+     * User interface to turn verbose mode on or off and to quit
      * 
      * @author bloo
      */
-    @Deprecated
     public synchronized void userInterface() {
 	byte operation;
 
@@ -166,20 +157,20 @@ public class Server extends TFTPConnection {
 		try {
 		    receivedPacket = receive(requestSocket); // wait for new request packet
 		    // TFTPPacket.checkPacket(receivedPacket);
-		    if (receivedPacket != null)
-		    {
-			println("Packet received from " + receivedPacket.getAddress());
+		    if (receivedPacket != null) {
+			println("\nPacket received from " + receivedPacket.getAddress());
 			new Thread(new ThreadedConnection(receivedPacket, verbose, outputWindow)).start(); // start new
-		    }// client
-													   // connection
-													   // for the
-		    // recently acquired request
+		    } // client
+		      // connection
+		      // for the
+		      // recently acquired request
 		} catch (IllegalArgumentException e) {
 		    e.printStackTrace();
 		    System.exit(1);
 		} catch (SocketTimeoutException e) {
-		    print("time out");
-		} 
+		    println("Connection time out");
+		}
+		println("settings(1), quit(2): ");
 	    }
 	}
 

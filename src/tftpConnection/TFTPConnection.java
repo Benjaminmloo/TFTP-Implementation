@@ -48,52 +48,6 @@ public abstract class TFTPConnection {
     // Class Variable definition end
 
     /**
-     * Requests a usable socket until successful
-     * 
-     * @return a usable socket
-     */
-    protected DatagramSocket waitForSocket() {
-	while (true) {
-	    try {
-		return new DatagramSocket();
-	    } catch (SocketException e) {
-		e.printStackTrace();
-		try {
-		    Thread.sleep(1000);
-		} catch (InterruptedException e1) {
-		    e1.printStackTrace();
-		}
-	    }
-	}
-    }
-
-    /**
-     * waits a datagram socket on a specied port
-     * 
-     * @param port
-     *            - the port requested for the socket
-     * @return the socket requested
-     */
-    protected DatagramSocket waitForSocket(int port) {
-	while (true) {
-	    try {
-		InetSocketAddress sockAd = new InetSocketAddress(InetAddress.getLocalHost(), port);
-		return new DatagramSocket(sockAd);
-	    } catch (SocketException e) {
-		e.printStackTrace();
-		try {
-		    Thread.sleep(1000);
-		} catch (InterruptedException e1) {
-		    e1.printStackTrace();
-		}
-	    } catch (UnknownHostException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	    }
-	}
-    }
-
-    /**
      * Sends a file over network over tftp
      * 
      * @param packet
@@ -141,19 +95,19 @@ public abstract class TFTPConnection {
 		    } while (!isFrom(ackPacket, socket, recipientAddress) || !isNext(ackPacket));
 
 		    if (TFTPPacket.getType(ackPacket) == TFTPPacket.OP_ERROR) {
-			System.err.println("\nError Occured\n" + TFTPPacket.packetToString(ackPacket));
+			System.err.println("\nError Occured\n" + TFTPPacket.toString(ackPacket));
 			return;
 		    }
 
 		    break; // if packet was sent and the apropriate ack was received break out of
 			   // retransmit loop
-		} catch(IllegalArgumentException e) {
+		} catch (IllegalArgumentException e) {
 		    return;
 		} catch (SocketTimeoutException e) { // default timeout is 2 seconds
 		    if (verbose)
 			println("Time Out");
 		    if (j >= TRANSMIT_LIMIT - 1) {
-			print("Connection timed out \n Stopping transfer");
+			print("Connection timed out \nStopping transfer");
 			return;
 		    } else {
 			println("Retransmiting");
@@ -212,11 +166,11 @@ public abstract class TFTPConnection {
 	try {
 	    if (verbose) {
 		println("Sending: ");
-		println(TFTPPacket.packetToString(sendPacket));
+		println(TFTPPacket.toString(sendPacket));
 	    }
 
 	    socket.send(sendPacket);
-	    if(TFTPPacket.getType(sendPacket) != TFTPPacket.OP_ERROR)
+	    if (TFTPPacket.getType(sendPacket) != TFTPPacket.OP_ERROR)
 		lastSentPkt = sendPacket;
 	} catch (IOException e) {
 	    socket.close();
@@ -296,7 +250,7 @@ public abstract class TFTPConnection {
 			return;
 		    }
 		} catch (IllegalArgumentException e) {
-		  return;  
+		    return;
 		} catch (SocketTimeoutException e) {
 		    println("Time Out");
 		    if (i >= TRANSMIT_LIMIT - 1) {
@@ -404,7 +358,8 @@ public abstract class TFTPConnection {
      * @author bloo
      * @throws SocketTimeoutException
      */
-    protected DatagramPacket receive(DatagramSocket socket, int length) throws SocketTimeoutException, IllegalArgumentException {
+    protected DatagramPacket receive(DatagramSocket socket, int length)
+	    throws SocketTimeoutException, IllegalArgumentException {
 	DatagramPacket receivedPacket;
 
 	receivedPacket = new DatagramPacket(new byte[length], length);
@@ -412,16 +367,16 @@ public abstract class TFTPConnection {
 	try {
 	    socket.receive(receivedPacket);
 
-	    validate(receivedPacket, socket);
-	    
+	    validatePacket(receivedPacket, socket);
+
 	    if (verbose) {
 		println("received: ");
-		println(TFTPPacket.packetToString(receivedPacket));
+		println(TFTPPacket.toString(receivedPacket));
 	    }
 
 	    return receivedPacket;
 
-	}catch (IOException e) {
+	} catch (IOException e) {
 	    if (e instanceof SocketTimeoutException)
 		throw (SocketTimeoutException) e;
 	    e.printStackTrace();
@@ -432,12 +387,12 @@ public abstract class TFTPConnection {
     }
 
     protected boolean isFrom(DatagramPacket packet, DatagramSocket socket, SocketAddress expectedSender) {
-        if (packet.getSocketAddress().equals(expectedSender))
-            return true;
-        send(TFTPPacket.createError(5, "Packet received from an unrecognised TID".getBytes()), socket,
-        	packet.getSocketAddress());
-    
-        return false;
+	if (packet.getSocketAddress().equals(expectedSender))
+	    return true;
+	send(TFTPPacket.createError(5, "Packet received from an unrecognised TID".getBytes()), socket,
+		packet.getSocketAddress());
+
+	return false;
     }
 
     protected boolean isLast(DatagramPacket packet) {
@@ -473,7 +428,7 @@ public abstract class TFTPConnection {
      * @throws IOException
      * @author Benjamin, BLoo
      */
-    public boolean validate(DatagramPacket packet, DatagramSocket socket) throws IllegalArgumentException{
+    protected boolean validatePacket(DatagramPacket packet, DatagramSocket socket) throws IllegalArgumentException {
 	boolean valid = false;
 	byte[] data = packet.getData();
 	byte[] hold;
@@ -501,12 +456,12 @@ public abstract class TFTPConnection {
 	    case (byte) 3: /* DATA Packet */
 	    {
 		hold = TFTPPacket.readToStop(4, data, packet.getLength());
-		valid =  (hold != null && hold.length == packet.getLength() - 4);
+		valid = (hold != null && hold.length == packet.getLength() - 4);
 		break;
 	    }
 	    case (byte) 4: /* ACK Packet */
 	    {
-		valid =  packet.getLength() == 4;
+		valid = packet.getLength() == 4;
 		break;
 	    }
 	    case (byte) 5: /* ERROR Packet */
@@ -518,50 +473,57 @@ public abstract class TFTPConnection {
 	    }
 	}
 
-	if(!valid) {
+	if (!valid) {
 	    println("Received Invlaid Packet");
 	    if (socket != null)
-		send(TFTPPacket.createError(4, "Illegal TFTP operation.".getBytes()), socket, packet.getSocketAddress());
+		send(TFTPPacket.createError(4, "Illegal TFTP operation.".getBytes()), socket,
+			packet.getSocketAddress());
 	    throw new IllegalArgumentException("Illegal TFTP operation.");
 	}
 	return valid;
     }
 
-    // #TODO move to test class
-    private void isValidTest() {
-	byte[] file = "test.txt".getBytes();
-	byte[] contents = new byte[512];
-	byte[] rrq, wrq, data, ack, error;
+    // Class Variable definition end
 
-	for (int i = 0; i < contents.length; i++)
-	    contents[i] = (byte) (Math.random() * 24 + 66);
+    /**
+     * waits a datagram socket on a specied port
+     * 
+     * @param port
+     *            - the port requested for the socket
+     * @param timeout
+     *            TODO
+     * @return the socket requested
+     */
+    protected DatagramSocket waitForSocket(int port, int timeOut) {
+	DatagramSocket socket;
+	while (true) {
+	    try {
+		if (port > 0)
+		    socket = new DatagramSocket(port, InetAddress.getLocalHost());
+		else
+		    socket = new DatagramSocket();
 
-	rrq = TFTPPacket.createRQ((byte) 1, file, MODE_NETASCII);
-	wrq = TFTPPacket.createRQ((byte) 2, file, MODE_NETASCII);
+		if (timeOut > 0)
+		    socket.setSoTimeout(timeOut); // 2 seconds
+		return socket;
 
-	data = TFTPPacket.createData(5, contents);
-
-	DatagramPacket dp = new DatagramPacket(data, data.length);
-	data = dp.getData();
-
-	ack = TFTPPacket.createAck(5);
-	error = TFTPPacket.createError((byte) 1, MODE_OCTET);
-
-	System.out.println("rrq test: " + validate(new DatagramPacket(rrq, rrq.length), null));
-
-	System.out.println("wrq test: " + validate(new DatagramPacket(wrq, wrq.length), null));
-
-	System.out.println("data test: " + validate(new DatagramPacket(data, data.length), null));
-
-	System.out.println("ack test: " + validate(new DatagramPacket(ack, ack.length), null));
-
-	System.out.println("error test: " + validate(new DatagramPacket(error, error.length), null));
+	    } catch (SocketException e) {
+		e.printStackTrace();
+		try {
+		    Thread.sleep(500);
+		} catch (InterruptedException e1) {
+		    e1.printStackTrace();
+		}
+	    } catch (UnknownHostException e) {
+		e.printStackTrace();
+	    }
+	}
     }
 
     /**
      * Split file into 512 byte chunks
      *
-     * @param fileNameb
+     * @param fileName
      *            - file to be split
      * @return
      * @throws IOException
@@ -601,7 +563,7 @@ public abstract class TFTPConnection {
      * @throws IOException
      * @author Eric
      */
-    protected int saveFile(ArrayList<byte[]> data, String fileName) throws IOException {
+    private int saveFile(ArrayList<byte[]> data, String fileName) throws IOException {
 	if (new File(new File(fileName).getParent()).getUsableSpace() < data.size() * 512)
 	    throw new FullFileSystemException("File " + fileName + "cannot fit the file's " + data.size() * 512
 		    + "bytes. File has space " + new File(fileName).getUsableSpace());
@@ -640,7 +602,7 @@ public abstract class TFTPConnection {
      * @param s
      * @author Benjamin
      */
-    public void print(String s) {
+    protected void print(String s) {
 	System.out.println(s);
 	this.outputWindow.append(s);
 	this.scrollBar.setValue(scrollBar.getMaximum() + 1);
@@ -653,13 +615,44 @@ public abstract class TFTPConnection {
      * 
      * @author Benjamin
      */
-    public void println(String s) {
+    protected void println(String s) {
 	System.out.println(s + "\n");
 	this.outputWindow.append(s + "\n");
 	this.scrollBar.setValue(scrollBar.getMaximum() + 1);
     }
 
     public abstract void takeInput(String s);
+
+    // #TODO move to test class
+    private void isValidTest() {
+	byte[] file = "test.txt".getBytes();
+	byte[] contents = new byte[512];
+	byte[] rrq, wrq, data, ack, error;
+
+	for (int i = 0; i < contents.length; i++)
+	    contents[i] = (byte) (Math.random() * 24 + 66);
+
+	rrq = TFTPPacket.createRQ((byte) 1, file, MODE_NETASCII);
+	wrq = TFTPPacket.createRQ((byte) 2, file, MODE_NETASCII);
+
+	data = TFTPPacket.createData(5, contents);
+
+	DatagramPacket dp = new DatagramPacket(data, data.length);
+	data = dp.getData();
+
+	ack = TFTPPacket.createAck(5);
+	error = TFTPPacket.createError((byte) 1, MODE_OCTET);
+
+	System.out.println("rrq test: " + validatePacket(new DatagramPacket(rrq, rrq.length), null));
+
+	System.out.println("wrq test: " + validatePacket(new DatagramPacket(wrq, wrq.length), null));
+
+	System.out.println("data test: " + validatePacket(new DatagramPacket(data, data.length), null));
+
+	System.out.println("ack test: " + validatePacket(new DatagramPacket(ack, ack.length), null));
+
+	System.out.println("error test: " + validatePacket(new DatagramPacket(error, error.length), null));
+    }
 
     protected class FullFileSystemException extends IOException {
 	private static final long serialVersionUID = 7770593212561838179L;
@@ -668,6 +661,5 @@ public abstract class TFTPConnection {
 	    super(msg);
 	}
     }
-    
-    
+
 }

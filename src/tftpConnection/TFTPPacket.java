@@ -63,7 +63,7 @@ public abstract class TFTPPacket {
     }
 
     /**
-     * creates acknowledge packet based on given block number
+     * creates acknowledge packet
      * 
      * @param blockNum
      *            - the current number the packet is acknowledging
@@ -144,7 +144,7 @@ public abstract class TFTPPacket {
     /**
      * Authenticates packet
      * 
-     * @author Benjamin
+     * @author Benjamin, BLoo
      * @param packet
      * @throws IOException
      */
@@ -213,7 +213,7 @@ public abstract class TFTPPacket {
      * @return contents of a packet
      * @author bloo
      */
-    public static String packetToString(DatagramPacket packet) {
+    public static String toString(DatagramPacket packet) {
 	String descriptor = "";
 	byte[] data = packet.getData();
 	if (data.length > 0) {
